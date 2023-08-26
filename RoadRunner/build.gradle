@@ -1,14 +1,166 @@
+buildscript {
+    ext.min_sdk_version = "8.2.0"
+    ext.min_rr_version = "1.0.0-beta2"
+    ext.min_dash_version = "0.4.10"
+    ext.rr_ftc_version = "0.1.0-SNAPSHOT"
+}
+
+plugins {
+    id "com.github.node-gradle.node" version "2.2.4"
+}
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
 
 android {
     compileSdkVersion 29
 
     defaultConfig {
-        minSdkVersion 24
+        minSdkVersion 23
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 28
     }
 
     namespace 'com.acmerobotics.roadrunner'
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
+}
+
+node {
+    version = "18.12.1"
+    download = true
+    nodeModulesDir = file("${project.projectDir.parent}/web")
+}
+
+yarn_build.dependsOn yarn_install
+
+task cleanWebAssets(type: Delete) {
+    delete "${android.sourceSets.getByName("main").assets.srcDirs[0]}/web"
+}
+
+clean.dependsOn cleanWebAssets
+
+task copyWebAssets(type: Copy) {
+    from "${project.projectDir.parent}/web/dist"
+    into "${android.sourceSets.getByName("main").assets.srcDirs[0]}/web"
+}
+
+copyWebAssets.dependsOn cleanWebAssets
+copyWebAssets.dependsOn yarn_build
+
+android.libraryVariants.all { variant ->
+    variant.preBuildProvider.get().dependsOn copyWebAssets
+}
+
+repositories {
+    maven {
+        url = 'https://maven.brott.dev/'
+    }
+}
+
+dependencies {
+    api "org.firstinspires.ftc:RobotCore:$min_sdk_version"
+
+    api "com.acmerobotics.roadrunner:core:$min_rr_version"
+    api "com.acmerobotics.roadrunner:actions:$min_rr_version"
+
+    implementation "com.acmerobotics.dashboard:dashboard:$min_dash_version"
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
+
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def addPomDependencies(root) {
+    def depsNode = root.appendNode("dependencies")
+
+    // Apparently you can make closures but not "inner methods"
+    def addDep = { groupId, artifactId, version, scope ->
+        def n = depsNode.appendNode("dependency")
+        n.appendNode("groupId", groupId)
+        n.appendNode("artifactId", artifactId)
+        n.appendNode("version", version)
+        n.appendNode("scope", scope)
+        return n
+    }
+
+    addDep("com.acmerobotics.dashboard", "dashboard", min_dash_version, "compile")
+
+    addDep("org.firstinspires.ftc", "RobotCore", min_sdk_version, "compile")
+
+    addDep("com.fasterxml.jackson.core", "jackson-databind", "2.12.7", "runtime")
+}
+
+task androidSourcesJar(type: Jar) {
+    classifier = "sources"
+    from android.sourceSets.main.java.srcDirs
+}
+
+task androidJavadocs(type: Javadoc) {
+    failOnError = false
+    source = android.sourceSets.main.java.srcDirs
+    ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
+    classpath += files(ext.androidJar)
+}
+
+task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+    classifier = "javadoc"
+    from androidJavadocs.destinationDir
+}
+
+project.afterEvaluate {
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                artifact bundleReleaseAar
+                artifact androidSourcesJar
+//                artifact androidJavadocsJar
+
+                groupId = "com.acmerobotics.roadrunner"
+                artifactId = "ftc"
+                version rr_ftc_version
+
+                pom {
+                    description = "FTC utilities for Road Runner"
+                    name = "Road Runner FTC"
+                    url = "https://github.com/rbrott/road-runner-ftc"
+
+                    licenses {
+                        license {
+                            name = "The MIT License"
+                            url = "https://opensource.org/licenses/MIT"
+                            distribution = "repo"
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = "rbrott"
+                            name = "Ryan Brott"
+                            email = "rcbrott@gmail.com"
+                        }
+                    }
+
+                    scm {
+                        url = "https://github.com/rbrott/road-runner-ftc"
+                    }
+                }
+
+                // Seems like you can"t define ad hoc software components without a plugin.
+                // Remind me never to read the Gradle docs again.
+                pom.withXml {
+                    // Android Studio complains here, but passing null straight up doesn't work
+                    //noinspection GroovyImplicitNullArgumentCall
+                    def root = asNode()
+                    addPomDependencies(root)
+                }
+            }
+        }
+    }
 }
