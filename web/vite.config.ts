@@ -12,6 +12,7 @@ export default defineConfig({
         deadWheelAngularRamp: resolve(__dirname, 'tuning/dead-wheel-angular-ramp.html'),
         driveEncoderAngularRamp: resolve(__dirname, 'tuning/drive-encoder-angular-ramp.html'),
         forwardRamp: resolve(__dirname, 'tuning/forward-ramp.html'),
+        lateralRamp: resolve(__dirname, 'tuning/lateral-ramp.html'),
       },
     },
   },

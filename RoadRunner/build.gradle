@@ -1,6 +1,6 @@
 buildscript {
     ext.min_sdk_version = "8.2.0"
-    ext.min_rr_version = "1.0.0-beta2"
+    ext.min_rr_version = "1.0.0-beta3"
     ext.min_dash_version = "0.4.10"
     ext.rr_ftc_version = "0.1.0"
 }
@@ -68,7 +68,7 @@ dependencies {
     api "com.acmerobotics.roadrunner:core:$min_rr_version"
     api "com.acmerobotics.roadrunner:actions:$min_rr_version"
 
-    implementation "com.acmerobotics.dashboard:dashboard:$min_dash_version"
+    api "com.acmerobotics.dashboard:dashboard:$min_dash_version"
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
 
@@ -89,6 +89,9 @@ def addPomDependencies(root) {
         n.appendNode("scope", scope)
         return n
     }
+
+    addDep("com.acmerobotics.roadrunner", "core", min_rr_version, "compile")
+    addDep("com.acmerobotics.roadrunner", "actions", min_rr_version, "compile")
 
     addDep("com.acmerobotics.dashboard", "dashboard", min_dash_version, "compile")
 
