@@ -60,7 +60,7 @@ object FlightRecorder : OpModeManagerNotifier.Notifications {
 
             // clean up old files
             run {
-                val fs = LOG_ROOT.listFiles()!!
+                val fs = LOG_ROOT.listFiles() ?: return@run
                 fs.sortBy { it.lastModified() }
                 var totalSizeBytes = fs.sumOf { it.length() }
 
