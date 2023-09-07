@@ -94,7 +94,7 @@ object TuningFiles {
             : WebHandlerManager? = null
 
     private fun getFileTypeDir(ty: FileType): File {
-        return File(ROOT, ty.name)
+        return File(ROOT, ty.baseName)
     }
 
     fun save(ty: FileType, data: Any?) {
@@ -123,10 +123,7 @@ object TuningFiles {
             registerAssetsUnderPath(manager, assetManager, "assets")
             registerAssetsUnderPath(manager, assetManager, "tuning")
             for (ty in FileType.values()) {
-                val base = "/tuning/" + ty.name
-                val wh = newStaticAssetHandler(assetManager, ty.name + "/index.html")
-                manager.register(base, wh)
-                manager.register("$base/", wh)
+                val base = "/tuning/" + ty.baseName
                 val dir = getFileTypeDir(ty)
                 dir.mkdirs()
                 manager.register("$base/latest.json",
