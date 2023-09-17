@@ -535,18 +535,40 @@ class MecanumMotorDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() 
             telemetry.addLine("<font face=\"monospace\">&nbsp;&nbsp;A / X&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Rear&nbsp;&nbsp;Left</font>")
             telemetry.addLine()
 
+            val hasDriveEncoders = view.leftEncs.isNotEmpty() && view.rightEncs.isNotEmpty()
+
             if (gamepad1.x) {
                 view.leftMotors[0].power = MOTOR_POWER
                 telemetry.addLine("Running Motor: Front Left")
+                if (hasDriveEncoders) {
+                    val pv = view.leftEncs[0].getPositionAndVelocity()
+                    telemetry.addLine("Encoder Position: " + pv.position)
+                    telemetry.addLine("Encoder Velocity: " + pv.velocity)
+                }
             } else if (gamepad1.y) {
                 view.rightMotors[0].power = MOTOR_POWER
                 telemetry.addLine("Running Motor: Front Right")
+                if (hasDriveEncoders) {
+                    val pv = view.rightEncs[0].getPositionAndVelocity()
+                    telemetry.addLine("Encoder Position: " + pv.position)
+                    telemetry.addLine("Encoder Velocity: " + pv.velocity)
+                }
             } else if (gamepad1.b) {
                 view.rightMotors[1].power = MOTOR_POWER
                 telemetry.addLine("Running Motor: Rear Right")
+                if (hasDriveEncoders) {
+                    val pv = view.rightEncs[1].getPositionAndVelocity()
+                    telemetry.addLine("Encoder Position: " + pv.position)
+                    telemetry.addLine("Encoder Velocity: " + pv.velocity)
+                }
             } else if (gamepad1.a) {
                 view.leftMotors[1].power = MOTOR_POWER
                 telemetry.addLine("Running Motor: Rear Left")
+                if (hasDriveEncoders) {
+                    val pv = view.leftEncs[1].getPositionAndVelocity()
+                    telemetry.addLine("Encoder Position: " + pv.position)
+                    telemetry.addLine("Encoder Velocity: " + pv.velocity)
+                }
             } else {
                 for (m in view.motors) {
                     m.power = 0.0
