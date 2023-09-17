@@ -24,6 +24,7 @@ import com.qualcomm.robotcore.util.SerialNumber
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
 import kotlin.math.absoluteValue
+import kotlin.math.max
 import kotlin.math.min
 
 class MidpointTimer {
@@ -117,22 +118,24 @@ class DriveView(
             DriveType.MECANUM -> {
                 val wheelPowers = MecanumKinematics(1.0).inverse(PoseVelocity2dDual.constant<Time>(powers, 1))
                 val maxPowerMag = wheelPowers.all().maxOfOrNull { it.value().absoluteValue }!!
+                val divisor = max(1.0, maxPowerMag)
 
-                leftMotors[0].power = wheelPowers.leftFront.value() / maxPowerMag
-                leftMotors[1].power = wheelPowers.leftBack.value() / maxPowerMag
-                rightMotors[0].power = wheelPowers.rightFront.value() / maxPowerMag
-                rightMotors[1].power = wheelPowers.rightBack.value() / maxPowerMag
+                leftMotors[0].power = wheelPowers.leftFront.value() / divisor
+                leftMotors[1].power = wheelPowers.leftBack.value() / divisor
+                rightMotors[0].power = wheelPowers.rightFront.value() / divisor
+                rightMotors[1].power = wheelPowers.rightBack.value() / divisor
             }
 
             DriveType.TANK -> {
                 val wheelPowers = TankKinematics(2.0).inverse(PoseVelocity2dDual.constant<Time>(powers, 1))
                 val maxPowerMag = wheelPowers.all().maxOfOrNull { it.value().absoluteValue }!!
+                val divisor = max(1.0, maxPowerMag)
 
                 for (m in leftMotors) {
-                    m.power = wheelPowers.left.value() / maxPowerMag
+                    m.power = wheelPowers.left.value() / divisor
                 }
                 for (m in rightMotors) {
-                    m.power = wheelPowers.right.value() / maxPowerMag
+                    m.power = wheelPowers.right.value() / divisor
                 }
             }
         }
