@@ -141,14 +141,14 @@ async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys
     y: ys,
     name: 'Samples',
     // markers seem to respond to selection 
-    marker: {color: mask.map(b => b ? color : colorLight), size: 5},
+    marker: { color: mask.map(b => b ? color : colorLight), size: 5 },
   }, {
     type: 'scatter',
     mode: 'lines',
     x: [minX, maxX],
     y: [m * minX + b, m * maxX + b],
     name: 'Regression Line',
-    line: {color: 'red'}
+    line: { color: 'red' }
   }], {
     title: options.title || '',
     // sets the starting tool from the modebar
@@ -173,7 +173,7 @@ async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys
     // TODO: this seems to work? maybe there aren't type definitions yet?
     Plotly.restyle(chartDiv, 'marker.color', [
       mask.map(b => b ? color : colorLight)
-    // @ts-ignore
+      // @ts-ignore
     ], [0]);
 
     const [m, b] = fit(
@@ -194,7 +194,7 @@ async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys
 
   let pendingSelection: Plotly.PlotSelectionEvent | null = null;
 
-  plot.on('plotly_selected', function(eventData) {
+  plot.on('plotly_selected', function (eventData) {
     if (eventData === undefined) {
       return;
     }
@@ -258,7 +258,7 @@ async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys
   container.appendChild(bar);
   container.appendChild(chartDiv);
 
-  return function(xsNew: number[], ysNew: number[]) {
+  return function (xsNew: number[], ysNew: number[]) {
     if (xsNew.length !== ysNew.length) {
       throw new Error(`${xsNew.length} !== ${ysNew.length}`);
     }
@@ -300,6 +300,9 @@ type AngularRampData = {
   angVels: [Signal, Signal, Signal];
 };
 
+// We skip the last measurement because it may be corrupted. Perhaps an artifact of
+// poisoned Lynx modules?
+
 // TODO: should this be tied to particular IDs?
 export async function loadDeadWheelAngularRampRegression(data: AngularRampData) {
   const [_, angVels] = data.angVels.reduce((acc: [number, number[]], vsArg) => {
@@ -311,45 +314,45 @@ export async function loadDeadWheelAngularRampRegression(data: AngularRampData) 
     }
     return acc;
   }, [0, []]);
-  
+
   const deadWheelCharts = document.getElementById('deadWheelCharts')!;
   data.parEncVels.forEach((vs, i) => {
     const div = document.createElement('div');
-    newLinearRegressionChart(div, 
+    newLinearRegressionChart(div,
       angVels.slice(1, -1),
       fixVels(
-        vs.times.slice(0, -1), 
-        data.parEncPositions[i].values.slice(0, -1), 
+        vs.times.slice(0, -1),
+        data.parEncPositions[i].values.slice(0, -1),
         vs.values.slice(0, -1)
       ),
-      {title: `Parallel Wheel ${i} Regression`, slope: 'y-position'});
+      { title: `Parallel Wheel ${i} Regression`, slope: 'y-position' });
     deadWheelCharts.appendChild(div);
   });
   data.perpEncVels.forEach((vs, i) => {
     const div = document.createElement('div');
-    newLinearRegressionChart(div, 
+    newLinearRegressionChart(div,
       angVels.slice(1, -1),
       fixVels(
-        vs.times.slice(0, -1), 
-        data.perpEncPositions[i].values.slice(0, -1), 
+        vs.times.slice(0, -1),
+        data.perpEncPositions[i].values.slice(0, -1),
         vs.values.slice(0, -1)
       ),
-      {title: `Perpendicular Wheel ${i} Regression`, slope: 'x-position'});
+      { title: `Perpendicular Wheel ${i} Regression`, slope: 'x-position' });
     deadWheelCharts.appendChild(div);
   });
 
   const setParams = await (async () => {
     const allPowers = [...data.leftPowers, ...data.rightPowers];
-    const appliedVoltages = data.voltages.values.slice(0, -1).map((v, i) => 
+    const appliedVoltages = data.voltages.values.slice(0, -1).map((v, i) =>
       allPowers.reduce((acc, ps) => Math.max(acc, ps.values[i]), 0) * v);
 
     const setTrackWidthData = await newLinearRegressionChart(
       document.getElementById('trackWidthChart')!,
       [], [],
-      {title: 'Track Width Regression', slope: 'track width'},
+      { title: 'Track Width Regression', slope: 'track width' },
     );
 
-    return (kV: number, kS: number) => setTrackWidthData(angVels, appliedVoltages.map((v) => 
+    return (kV: number, kS: number) => setTrackWidthData(angVels, appliedVoltages.map((v) =>
       (v - kS) / kV * (data.type === 'mecanum' ? 2 : 1)));
   })();
 
@@ -364,15 +367,15 @@ export async function loadDeadWheelAngularRampRegression(data: AngularRampData) 
 
 export async function loadDriveEncoderAngularRampRegression(data: AngularRampData) {
   const leftEncVels = data.leftEncVels.map((vs, i) =>
-        fixVels(vs.times.slice(0, -1), data.leftEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
+    fixVels(vs.times.slice(0, -1), data.leftEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
   const rightEncVels = data.rightEncVels.map((vs, i) =>
-        fixVels(vs.times.slice(0, -1), data.rightEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
+    fixVels(vs.times.slice(0, -1), data.rightEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
 
-  newLinearRegressionChart(
+  await newLinearRegressionChart(
     document.getElementById('rampChart')!,
     [
-      ...leftEncVels.flatMap(vs => vs.slice(0, -1).map(v => -v)), 
-      ...rightEncVels.flatMap(vs => vs.slice(0, -1)),
+      ...leftEncVels.flatMap(vs => vs.map(v => -v)),
+      ...rightEncVels.flatMap(vs => vs),
     ],
     [
       ...data.leftPowers.flatMap(ps => {
@@ -384,11 +387,11 @@ export async function loadDriveEncoderAngularRampRegression(data: AngularRampDat
         return psNew.slice(1, -1);
       }),
     ],
-    {title: 'Angular Ramp Regression', slope: 'kV', intercept: 'kS'}
+    { title: 'Angular Ramp Regression', slope: 'kV', intercept: 'kS' }
   );
 
   const p = data.angVels.reduce<[number, number[]]>((acc, vsArg) => {
-    const vs = fixAngVels(vsArg.values).map(v => Math.abs(v));
+    const vs = fixAngVels(vsArg.values.slice(0, -1)).map(v => Math.abs(v));
     const maxV = vs.reduce((acc, v) => Math.max(acc, v), 0);
     const [accMaxV, _] = acc;
     if (maxV >= accMaxV) {
@@ -401,12 +404,12 @@ export async function loadDriveEncoderAngularRampRegression(data: AngularRampDat
   await newLinearRegressionChart(
     document.getElementById('trackWidthChart')!,
     angVels,
-    angVels.map((_, i) => 
+    angVels.map((_, i) =>
       (leftEncVels.reduce((acc, vs) => acc - vs[i], 0) / data.leftEncVels.length
         + rightEncVels.reduce((acc, vs) => acc + vs[i], 0) / data.rightEncVels.length)
-        * (data.type === 'mecanum' ? 0.5 : 1)
+      * (data.type === 'mecanum' ? 0.5 : 1)
     ),
-    {title: 'Track Width Regression', slope: 'track width'},
+    { title: 'Track Width Regression', slope: 'track width' },
   );
 }
 
@@ -419,7 +422,7 @@ type ForwardRampData = {
 };
 
 export async function loadForwardRampRegression(data: ForwardRampData) {
-  const forwardEncVels = data.forwardEncVels.flatMap((vs, i) => 
+  const forwardEncVels = data.forwardEncVels.flatMap((vs, i) =>
     fixVels(vs.times.slice(0, -1), data.forwardEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
   const appliedVoltages = data.forwardEncVels.flatMap(() => {
     const voltages = data.voltages.values.slice(0, -1).map((v, i) =>
@@ -431,7 +434,7 @@ export async function loadForwardRampRegression(data: ForwardRampData) {
   await newLinearRegressionChart(
     document.getElementById('rampChart')!,
     forwardEncVels, appliedVoltages,
-    {title: 'Forward Ramp Regression', slope: 'kV', intercept: 'kS'},
+    { title: 'Forward Ramp Regression', slope: 'kV', intercept: 'kS' },
   );
 }
 
@@ -467,7 +470,7 @@ export async function loadLateralRampRegression(data: LateralRampData) {
     const setData = await newLinearRegressionChart(
       document.getElementById('rampChart')!,
       [], [],
-      {title: 'Lateral Ramp Regression', slope: 'lateral in per tick'},
+      { title: 'Lateral Ramp Regression', slope: 'lateral in per tick' },
     );
 
     return (inPerTick: number, kV: number, kS: number) => {
@@ -489,7 +492,7 @@ export async function loadLateralRampRegression(data: LateralRampData) {
 
 export function installButtonHandlers<T>(name: string, loadRegression: (data: T) => Promise<void>) {
   const latestButton = document.getElementById('latest')!;
-  latestButton.addEventListener('click', function() {
+  latestButton.addEventListener('click', function () {
     fetch(`/tuning/${name}/latest.json`)
       .then(res => {
         if (res.ok) {
@@ -516,9 +519,9 @@ export function installButtonHandlers<T>(name: string, loadRegression: (data: T)
 
   // TODO: is there not a better way to type this?
   const browseInput = document.getElementById('browse')! as (HTMLInputElement & { files: Blob[] });
-  browseInput.addEventListener('change', function() {
+  browseInput.addEventListener('change', function () {
     const reader = new FileReader();
-    reader.onload = async function() {
+    reader.onload = async function () {
       if (typeof reader.result === 'string') {
         await loadRegression(JSON.parse(reader.result.trim()));
       }
