@@ -158,10 +158,16 @@ private fun recordEncoderData(e: Encoder, ts: Map<SerialNumber, Double>, ps: Mut
     vs.values.add(p.velocity.toDouble())
 }
 
-// TODO: should these be adjustable?
-fun power(seconds: Double) = min(0.1 * seconds, 0.9)
-
 class AngularRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
+    companion object {
+        @JvmField
+        var POWER_PER_SEC = 0.1
+        @JvmField
+        var POWER_MAX = 0.9
+    }
+
+    fun power(seconds: Double) = min(POWER_PER_SEC * seconds, POWER_MAX)
+
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
         view.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL)
@@ -287,6 +293,15 @@ class ForwardPushTest(val dvf: DriveViewFactory) : LinearOpMode() {
 }
 
 class ForwardRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
+    companion object {
+        @JvmField
+        var POWER_PER_SEC = 0.1
+        @JvmField
+        var POWER_MAX = 0.9
+    }
+
+    fun power(seconds: Double) = min(POWER_PER_SEC * seconds, POWER_MAX)
+
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
         view.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL)
@@ -336,6 +351,15 @@ class ForwardRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
 }
 
 class LateralRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
+    companion object {
+        @JvmField
+        var POWER_PER_SEC = 0.1
+        @JvmField
+        var POWER_MAX = 0.9
+    }
+
+    fun power(seconds: Double) = min(POWER_PER_SEC * seconds, POWER_MAX)
+
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
         view.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL)
