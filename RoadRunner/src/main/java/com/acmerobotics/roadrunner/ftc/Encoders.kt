@@ -53,9 +53,9 @@ class RollingThreeMedian {
 
         i = (i + 1) % 3
 
-        return history[0] + history[1] + history[2] -
-                min(history[0], min(history[1], history[2]) -
-                        max(history[0], max(history[1], history[2])))
+        return max(
+                min(history[0], history[1]),
+                min(max(history[0], history[1]), history[2]))
     }
 }
 
