@@ -61,6 +61,10 @@ private fun unwrap(e: Encoder): RawEncoder =
             is RawEncoder -> e
         }
 
+fun interface FeedforwardFactory {
+    fun make(): MotorFeedforward
+}
+
 class DriveView(
         val type: DriveType,
         val inPerTick: Double,
@@ -79,7 +83,7 @@ class DriveView(
         perpEncs: List<Encoder>,
         val imu: IMU,
         val voltageSensor: VoltageSensor,
-        val feedforward: MotorFeedforward,
+        val feedforwardFactory: FeedforwardFactory,
 ) {
     val motors = leftMotors + rightMotors
 
@@ -504,7 +508,7 @@ class ManualFeedforwardTuner(val dvf: DriveViewFactory) : LinearOpMode() {
                     }
                     telemetry.addData("vref", v[0])
 
-                    val power = view.feedforward.compute(v) / view.voltageSensor.voltage
+                    val power = view.feedforwardFactory.make().compute(v) / view.voltageSensor.voltage
                     view.setDrivePowers(PoseVelocity2d(Vector2d(power, 0.0), 0.0))
                 }
                 Mode.DRIVER_MODE -> {
