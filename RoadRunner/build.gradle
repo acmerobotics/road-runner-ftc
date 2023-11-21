@@ -36,6 +36,12 @@ node {
     nodeModulesDir = file("${project.projectDir.parent}/web")
 }
 
+yarn_build {
+    environment = [
+            "VITE_APP_VERSION": rr_ftc_version
+    ]
+}
+
 yarn_build.dependsOn yarn_install
 
 task cleanWebAssets(type: Delete) {

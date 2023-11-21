@@ -1,62 +1,67 @@
 <!doctype html>
 <html>
-  <head>
-    <title>RR Drive Encoder Angular Ramp Regression</title>
 
-    <style>
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
+<head>
+  <title>RR Drive Encoder Angular Ramp Regression</title>
 
-.content {
-  margin: auto;
-}
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+    }
 
-header {
-  max-width: 600px;
-  margin: auto;
-}
+    .content {
+      margin: auto;
+    }
 
-.bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    header {
+      max-width: 600px;
+      margin: auto;
+    }
 
-h1 {
-  margin-bottom: 0;
-}
+    .bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-details, a {
-  display: block;
-  margin: 1rem 0 1rem 0;
-}
-    </style>
+    h1 {
+      margin-bottom: 0;
+    }
 
-    <script type="module">
-import {loadDriveEncoderAngularRampRegression, installButtonHandlers} from './common.ts';
+    details,
+    a {
+      display: block;
+      margin: 1rem 0 1rem 0;
+    }
+  </style>
 
-window.addEventListener("DOMContentLoaded", function() {
-  installButtonHandlers("angular-ramp", loadDriveEncoderAngularRampRegression)
-});
-    </script>
-  </head>
-  <body>
-    <div class="content">
-      <header>
-        <h1>RR Drive Encoder Angular Ramp Regression</h1>
-        <details></details>
+  <script type="module">
+    import { loadDriveEncoderAngularRampRegression, installButtonHandlers } from './common.ts';
 
-        <div id="download"></div>
+    window.addEventListener("DOMContentLoaded", function () {
+      installButtonHandlers("angular-ramp", loadDriveEncoderAngularRampRegression)
+    });
+  </script>
+</head>
 
-        <p>
-          <button id="latest">Latest</button>
-          <input id="browse" type="file" accept="application/json">
-        </p>
-      </header>
-      
-      <div id="rampChart"></div>
-      <div id="trackWidthChart"></div>
-    </div>
-  </body>
+<body>
+  <div class="content">
+    <header>
+      <h1>RR Drive Encoder Angular Ramp Regression</h1>
+      <p>Version: %VITE_APP_VERSION%</p>
+      <details></details>
+
+      <div id="download"></div>
+
+      <p>
+        <button id="latest">Latest</button>
+        <input id="browse" type="file" accept="application/json">
+      </p>
+    </header>
+
+    <div id="rampChart"></div>
+    <div id="trackWidthChart"></div>
+  </div>
+</body>
+
 </html>
