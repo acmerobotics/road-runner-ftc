@@ -8,7 +8,10 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
 
-class PositionVelocityPair(@JvmField val position: Int, @JvmField val velocity: Int)
+class PositionVelocityPair(
+        @JvmField val position: Int, @JvmField val velocity: Int,
+        @JvmField val rawPosition: Int, @JvmField val rawVelocity: Int
+ )
 
 sealed interface Encoder {
     fun getPositionAndVelocity(): PositionVelocityPair
@@ -34,9 +37,13 @@ class RawEncoder(private val m: DcMotorEx) : Encoder {
     }
 
     override fun getPositionAndVelocity(): PositionVelocityPair {
+        val rawPosition = m.currentPosition
+        val rawVelocity = m.velocity.toInt()
         return PositionVelocityPair(
-                applyDirection(m.currentPosition),
-                applyDirection(m.velocity.toInt())
+                applyDirection(rawPosition),
+                applyDirection(rawVelocity),
+                rawPosition,
+                rawVelocity,
         )
     }
 
@@ -90,7 +97,9 @@ class OverflowEncoder(@JvmField val encoder: RawEncoder) : Encoder {
 
         return PositionVelocityPair(
                 p.position,
-                inverseOverflow(p.velocity, v)
+                inverseOverflow(p.velocity, v),
+                p.rawPosition,
+                p.rawVelocity,
         )
     }
 
