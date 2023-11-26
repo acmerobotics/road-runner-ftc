@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.jetbrains.annotations.NotNull;
 
-public class DocsSnippets {
+public class ActionsDocsSamples {
     public static class TodoAction implements Action {
         @Override
         public boolean run(@NotNull TelemetryPacket p) {
@@ -51,7 +51,7 @@ public class DocsSnippets {
     }
     // end sample
 
-    DocsSnippets() {
+    ActionsDocsSamples() {
         // sample: actionsMoveToPoint
         Drive drive = new Drive();
         Actions.runBlocking(drive.moveToPoint(10, 20));
