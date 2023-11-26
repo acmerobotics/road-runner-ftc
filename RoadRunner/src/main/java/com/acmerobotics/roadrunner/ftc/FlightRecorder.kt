@@ -65,7 +65,7 @@ object FlightRecorder : OpModeManagerNotifier.Notifications {
                 var totalSizeBytes = fs.sumOf { it.length() }
 
                 var i = 0
-                while (i < fs.size && totalSizeBytes >= 32 * 1000 * 1000) {
+                while (i < fs.size && totalSizeBytes >= 250 * 1000 * 1000) {
                     totalSizeBytes -= fs[i].length()
                     if (!fs[i].delete()) {
                         // avoid panicking here
