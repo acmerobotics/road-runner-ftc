@@ -209,8 +209,10 @@ async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys
       mask[pt.pointIndex] = b;
     }
 
-    // @ts-ignore
-    Plotly.restyle(chartDiv, 'selectedpoints', [null], [0]);
+    // This appears to be broken on recent Plotly version. I didn't see any issues online yet.
+    Plotly.restyle(chartDiv, {
+      'selectedpoints': [null],
+    }, [0]);
 
     pendingSelection = null;
 

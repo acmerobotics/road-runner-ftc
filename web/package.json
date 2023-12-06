@@ -4,13 +4,13 @@
     "build": "vite build"
   },
   "devDependencies": {
-    "@types/plotly.js-dist-min": "^2.3.1",
+    "@types/plotly.js-dist-min": "2.3.1",
     "@types/regression": "^2.0.2",
     "typescript": "^5.1.6",
     "vite": "^4.4.9"
   },
   "dependencies": {
-    "plotly.js-dist-min": "^2.25.2",
+    "plotly.js-dist-min": "2.3.1",
     "regression": "^2.0.1"
   }
 }
