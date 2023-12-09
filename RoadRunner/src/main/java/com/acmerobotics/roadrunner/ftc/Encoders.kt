@@ -1,5 +1,6 @@
 package com.acmerobotics.roadrunner.ftc
 
+import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorController
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
@@ -9,12 +10,13 @@ import kotlin.math.min
 import kotlin.math.round
 
 class PositionVelocityPair(
-        @JvmField val position: Int, @JvmField val velocity: Int,
-        @JvmField val rawPosition: Int, @JvmField val rawVelocity: Int
- )
+    @JvmField val position: Int, @JvmField val velocity: Int,
+    @JvmField val rawPosition: Int, @JvmField val rawVelocity: Int
+)
 
 sealed interface Encoder {
     fun getPositionAndVelocity(): PositionVelocityPair
+    fun resetEncoder()
 
     val controller: DcMotorController
     var direction: DcMotorSimple.Direction
@@ -36,14 +38,20 @@ class RawEncoder(private val m: DcMotorEx) : Encoder {
         return x
     }
 
+    override fun resetEncoder() {
+        val oldMode = m.mode
+        m.mode = DcMotor.RunMode.STOP_AND_RESET_ENCODER
+        m.mode = oldMode
+    }
+
     override fun getPositionAndVelocity(): PositionVelocityPair {
         val rawPosition = m.currentPosition
         val rawVelocity = m.velocity.toInt()
         return PositionVelocityPair(
-                applyDirection(rawPosition),
-                applyDirection(rawVelocity),
-                rawPosition,
-                rawVelocity,
+            applyDirection(rawPosition),
+            applyDirection(rawVelocity),
+            rawPosition,
+            rawVelocity,
         )
     }
 
@@ -61,8 +69,8 @@ class RollingThreeMedian {
         i = (i + 1) % 3
 
         return max(
-                min(history[0], history[1]),
-                min(max(history[0], history[1]), history[2]))
+            min(history[0], history[1]),
+            min(max(history[0], history[1]), history[2]))
     }
 }
 
@@ -87,6 +95,10 @@ class OverflowEncoder(@JvmField val encoder: RawEncoder) : Encoder {
 
     private val velEstimate = RollingThreeMedian()
 
+    override fun resetEncoder() {
+        encoder.resetEncoder()
+    }
+
     override fun getPositionAndVelocity(): PositionVelocityPair {
         val p = encoder.getPositionAndVelocity()
         val dt = lastUpdate.seconds()
@@ -96,10 +108,10 @@ class OverflowEncoder(@JvmField val encoder: RawEncoder) : Encoder {
         lastUpdate.reset()
 
         return PositionVelocityPair(
-                p.position,
-                inverseOverflow(p.velocity, v),
-                p.rawPosition,
-                p.rawVelocity,
+            p.position,
+            inverseOverflow(p.velocity, v),
+            p.rawPosition,
+            p.rawVelocity,
         )
     }
 
