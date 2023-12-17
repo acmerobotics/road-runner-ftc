@@ -106,10 +106,13 @@ type RegressionOptions = {
   title: string;
   slope: string;
   intercept?: string;
+  xLabel: string;
+  yLabel: string;
 };
 
 // data comes in pairs
-async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys: number[], options: RegressionOptions, onChange?: (m: number, b: number) => void): Promise<(xs: number[], ys: number[]) => void> {
+async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys: number[], options: RegressionOptions,
+  onChange?: (m: number, b: number) => void): Promise<(xs: number[], ys: number[]) => void> {
   if (xs.length !== ys.length) {
     throw new Error(`${xs.length} !== ${ys.length}`);
   }
@@ -140,7 +143,7 @@ async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys
     x: xs,
     y: ys,
     name: 'Samples',
-    // markers seem to respond to selection 
+    // markers seem to respond to selection
     marker: { color: mask.map(b => b ? color : colorLight), size: 5 },
   }, {
     type: 'scatter',
@@ -157,6 +160,16 @@ async function newLinearRegressionChart(container: HTMLElement, xs: number[], ys
     hovermode: false,
     width,
     height: width * 9 / 16,
+    xaxis: {
+      title: {
+        text: options.xLabel || '',
+      }
+    },
+    yaxis: {
+      title: {
+        text: options.yLabel || '',
+      }
+    }
   }, {
     // 'select2d', 'zoom2d', 'pan2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'resetScale2d' left
     modeBarButtonsToRemove: [],
@@ -327,7 +340,7 @@ export async function loadDeadWheelAngularRampRegression(data: AngularRampData) 
         data.parEncPositions[i].values.slice(0, -1),
         vs.values.slice(0, -1)
       ),
-      { title: `Parallel Wheel ${i} Regression`, slope: 'y-position' });
+      { title: `Parallel Wheel ${i} Regression`, slope: 'y-position', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' });
     deadWheelCharts.appendChild(div);
   });
   data.perpEncVels.forEach((vs, i) => {
@@ -339,7 +352,7 @@ export async function loadDeadWheelAngularRampRegression(data: AngularRampData) 
         data.perpEncPositions[i].values.slice(0, -1),
         vs.values.slice(0, -1)
       ),
-      { title: `Perpendicular Wheel ${i} Regression`, slope: 'x-position' });
+      { title: `Perpendicular Wheel ${i} Regression`, slope: 'x-position', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' });
     deadWheelCharts.appendChild(div);
   });
 
@@ -351,7 +364,7 @@ export async function loadDeadWheelAngularRampRegression(data: AngularRampData) 
     const setTrackWidthData = await newLinearRegressionChart(
       document.getElementById('trackWidthChart')!,
       [], [],
-      { title: 'Track Width Regression', slope: 'track width' },
+      { title: 'Track Width Regression', slope: 'track width', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' },
     );
 
     return (kV: number, kS: number) => setTrackWidthData(angVels, appliedVoltages.map((v) =>
@@ -389,7 +402,7 @@ export async function loadDriveEncoderAngularRampRegression(data: AngularRampDat
         return psNew.slice(1, -1);
       }),
     ],
-    { title: 'Angular Ramp Regression', slope: 'kV', intercept: 'kS' }
+    { title: 'Angular Ramp Regression', slope: 'kV', intercept: 'kS', xLabel: 'wheel velocity [ticks/s]', yLabel: 'applied voltage [V]' },
   );
 
   const p = data.angVels.reduce<[number, number[]]>((acc, vsArg) => {
@@ -411,7 +424,7 @@ export async function loadDriveEncoderAngularRampRegression(data: AngularRampDat
         + rightEncVels.reduce((acc, vs) => acc + vs[i], 0) / data.rightEncVels.length)
       * (data.type === 'mecanum' ? 0.5 : 1)
     ),
-    { title: 'Track Width Regression', slope: 'track width' },
+    { title: 'Track Width Regression', slope: 'track width', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' },
   );
 }
 
@@ -436,7 +449,7 @@ export async function loadForwardRampRegression(data: ForwardRampData) {
   await newLinearRegressionChart(
     document.getElementById('rampChart')!,
     forwardEncVels, appliedVoltages,
-    { title: 'Forward Ramp Regression', slope: 'kV', intercept: 'kS' },
+    { title: 'Forward Ramp Regression', slope: 'kV', intercept: 'kS', xLabel: 'forward velocity [ticks/s]', yLabel: 'applied voltage [V]' },
   );
 }
 
@@ -472,7 +485,7 @@ export async function loadLateralRampRegression(data: LateralRampData) {
     const setData = await newLinearRegressionChart(
       document.getElementById('rampChart')!,
       [], [],
-      { title: 'Lateral Ramp Regression', slope: 'lateral in per tick' },
+      { title: 'Lateral Ramp Regression', slope: 'lateral in per tick', xLabel: 'lateral velocity [ticks]', yLabel: 'applied voltage [V]' },
     );
 
     return (inPerTick: number, kV: number, kS: number) => {
