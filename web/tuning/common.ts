@@ -318,17 +318,32 @@ type AngularRampData = {
 // We skip the last measurement because it may be corrupted. Perhaps an artifact of
 // poisoned Lynx modules?
 
-// TODO: should this be tied to particular IDs?
-export async function loadDeadWheelAngularRampRegression(data: AngularRampData) {
-  const [_, angVels] = data.angVels.reduce((acc: [number, number[]], vsArg) => {
-    const vs = fixAngVels(vsArg.values.slice(0, -1)).map(v => Math.abs(v));
+function getPosZAngVelocity(data: AngularRampData) {
+  const p = data.angVels.reduce<[number, number, boolean, number[]]>((acc, vsArg, axisIdx) => {
+    const vs = fixAngVels(vsArg.values.slice(0, -1));
     const maxV = vs.reduce((acc, v) => Math.max(acc, v), 0);
-    const [accMaxV, _] = acc;
-    if (maxV >= accMaxV) {
-      return [maxV, vs];
+    const minV = vs.reduce((acc, v) => Math.max(acc, v), 0);
+    const [accMaxV, _axisIdx, _axisRev, _] = acc;
+    if (maxV >= -minV) {
+      if (maxV >= accMaxV) {
+        return [maxV, axisIdx, false, vs];
+      }
+    } else {
+      if (-minV >= accMaxV) {
+        return [-minV, axisIdx, true, vs];
+      }
     }
     return acc;
-  }, [0, []]);
+  }, [0, -1, false, []]);
+  if (p[1] !== 2 || p[2] !== false) {
+    throw new Error(`More rotation about the ${p[2] ? '-' : '+'}${['x', 'y', 'z'][p[1]]}-axis than the +z-axis. Fix the IMU orientation and run again.`);
+  }
+  return p[3];
+}
+
+// TODO: should this be tied to particular IDs?
+export async function loadDeadWheelAngularRampRegression(data: AngularRampData): Promise<string[]> {
+  const angVels = getPosZAngVelocity(data);
 
   const deadWheelCharts = document.getElementById('deadWheelCharts')!;
   data.parEncVels.forEach((vs, i) => {
@@ -407,16 +422,7 @@ export async function loadDriveEncoderAngularRampRegression(data: AngularRampDat
     { title: 'Angular Ramp Regression', slope: 'kV', intercept: 'kS', xLabel: 'wheel velocity [ticks/s]', yLabel: 'applied voltage [V]' },
   );
 
-  const p = data.angVels.reduce<[number, number[]]>((acc, vsArg) => {
-    const vs = fixAngVels(vsArg.values.slice(0, -1)).map(v => Math.abs(v));
-    const maxV = vs.reduce((acc, v) => Math.max(acc, v), 0);
-    const [accMaxV, _] = acc;
-    if (maxV >= accMaxV) {
-      return [maxV, vs];
-    }
-    return acc;
-  }, [0, []]);
-  const angVels = p[1].slice(1, -1);
+  const angVels = getPosZAngVelocity(data).slice(1, -1);
 
   await newLinearRegressionChart(
     document.getElementById('trackWidthChart')!,
