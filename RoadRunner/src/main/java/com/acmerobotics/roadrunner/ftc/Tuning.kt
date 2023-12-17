@@ -308,6 +308,10 @@ class ForwardRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
 
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
+        require(view.perpEncs.isNotEmpty()) {
+            "Only run this op mode if you're using dead wheels."
+        }
+
         view.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL)
 
         val data = object {
@@ -423,8 +427,6 @@ class LateralRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
 }
 
 fun lateralSum(view: DriveView): Double {
-    require(view.type == DriveType.MECANUM)
-
     return 0.25 * (
             -view.leftEncs[0].getPositionAndVelocity().position
                     +view.leftEncs[1].getPositionAndVelocity().position
@@ -435,6 +437,13 @@ fun lateralSum(view: DriveView): Double {
 class LateralPushTest(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
+
+        require(view.type == DriveType.MECANUM) {
+            "Only mecanum drives should run this op mode."
+        }
+        require(view.parEncs.isEmpty() && view.perpEncs.isEmpty()) {
+            "Do not run this op mode if using dead wheels."
+        }
 
         for (m in view.motors) {
             m.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT
