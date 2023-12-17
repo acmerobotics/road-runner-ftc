@@ -378,9 +378,11 @@ export async function loadDeadWheelAngularRampRegression(data: AngularRampData) 
   });
 
   setParams(parseFloat(kvInput.value), parseFloat(ksInput.value));
+
+  return [];
 }
 
-export async function loadDriveEncoderAngularRampRegression(data: AngularRampData) {
+export async function loadDriveEncoderAngularRampRegression(data: AngularRampData): Promise<string[]> {
   const leftEncVels = data.leftEncVels.map((vs, i) =>
     fixVels(vs.times.slice(0, -1), data.leftEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
   const rightEncVels = data.rightEncVels.map((vs, i) =>
@@ -426,6 +428,8 @@ export async function loadDriveEncoderAngularRampRegression(data: AngularRampDat
     ),
     { title: 'Track Width Regression', slope: 'track width', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' },
   );
+
+  return [];
 }
 
 type ForwardRampData = {
@@ -436,7 +440,7 @@ type ForwardRampData = {
   forwardEncVels: Signal[];
 };
 
-export async function loadForwardRampRegression(data: ForwardRampData) {
+export async function loadForwardRampRegression(data: ForwardRampData): Promise<string[]> {
   const forwardEncVels = data.forwardEncVels.flatMap((vs, i) =>
     fixVels(vs.times.slice(0, -1), data.forwardEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
   const appliedVoltages = data.forwardEncVels.flatMap(() => {
@@ -451,6 +455,8 @@ export async function loadForwardRampRegression(data: ForwardRampData) {
     forwardEncVels, appliedVoltages,
     { title: 'Forward Ramp Regression', slope: 'kV', intercept: 'kS', xLabel: 'forward velocity [ticks/s]', yLabel: 'applied voltage [V]' },
   );
+
+  return [];
 }
 
 type LateralRampData = {
@@ -464,7 +470,7 @@ type LateralRampData = {
   perpEncVels: Signal[];
 };
 
-export async function loadLateralRampRegression(data: LateralRampData) {
+export async function loadLateralRampRegression(data: LateralRampData): Promise<string[]> {
   const perpEncVels = data.perpEncVels.flatMap((vs, i) =>
     fixVels(vs.times.slice(0, -1), data.perpEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
   const appliedVoltages = data.perpEncVels.flatMap(() => {
@@ -503,12 +509,21 @@ export async function loadLateralRampRegression(data: LateralRampData) {
   });
 
   setParams(parseFloat(inPerTickInput.value), parseFloat(kvInput.value), parseFloat(ksInput.value));
+
+  const minVel = perpEncVels.reduce((acc, v) => Math.min(acc, v), 0);
+  const maxAbsVel = perpEncVels.reduce((acc, v) => Math.max(acc, Math.abs(v)), 0);
+  if (-minVel > 0.2 * maxAbsVel) {
+    return ['Warning: Lateral velocity should not go negative. Make sure the robot is pushed rightward and the encoders are oriented correctly.'];
+  }
+
+  return [];
 }
 
-export function installButtonHandlers<T>(name: string, loadRegression: (data: T) => Promise<void>) {
+export function installButtonHandlers<T>(name: string, loadRegression: (data: T) => Promise<string[]>) {
   const latestButton = document.getElementById('latest')!;
   latestButton.addEventListener('click', async function () {
     document.getElementById('error')!.innerText = "";
+    document.getElementById('warning')!.innerText = "";
     try {
       const res = await fetch(`/tuning/${name}/latest.json`);
 
@@ -526,7 +541,10 @@ export function installButtonHandlers<T>(name: string, loadRegression: (data: T)
 
         const json = await res.json();
 
-        await loadRegression(json);
+        const warnings = await loadRegression(json);
+        if (warnings.length > 0) {
+          document.getElementById('warning')!.innerText = warnings.join('\n');
+        }
       } else {
         throw new Error("No data files found");
       }
@@ -547,8 +565,12 @@ export function installButtonHandlers<T>(name: string, loadRegression: (data: T)
     reader.onload = async function () {
       if (typeof reader.result === 'string') {
         document.getElementById('error')!.innerText = "";
+        document.getElementById('warning')!.innerText = "";
         try {
-          await loadRegression(JSON.parse(reader.result.trim()));
+          const warnings = await loadRegression(JSON.parse(reader.result.trim()));
+          if (warnings.length > 0) {
+            document.getElementById('warning')!.innerText = warnings.join('\n');
+          }
         } catch (err: unknown) {
           console.error(err);
           if (typeof err === 'string') {

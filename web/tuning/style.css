@@ -26,12 +26,17 @@ h1 {
   margin-bottom: 0;
 }
 
-a, #error {
+a, #error, #warning {
   display: block;
   margin: 1rem 0 1rem 0;
 }
 
 #error {
   color: red;
+  font-weight: bold;
+}
+
+#warning {
+  color: orange;
   font-weight: bold;
 }
