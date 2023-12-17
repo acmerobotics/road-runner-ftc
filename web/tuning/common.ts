@@ -76,7 +76,7 @@ export function inverseOverflow(input: number, estimate: number) {
 // no output for first or last pair
 function fixVels(ts: number[], xs: number[], vs: number[]) {
   if (ts.length !== xs.length || ts.length !== vs.length) {
-    throw new Error();
+    throw new Error(`${ts.length} !== ${xs.length} !== ${vs.length}`);
   }
 
   return numDerivOffline(ts, xs).map((est, i) => inverseOverflow(vs[i + 1], est));
@@ -507,29 +507,37 @@ export async function loadLateralRampRegression(data: LateralRampData) {
 
 export function installButtonHandlers<T>(name: string, loadRegression: (data: T) => Promise<void>) {
   const latestButton = document.getElementById('latest')!;
-  latestButton.addEventListener('click', function () {
-    fetch(`/tuning/${name}/latest.json`)
-      .then(res => {
-        if (res.ok) {
-          const filename = res.headers.get('X-Filename');
+  latestButton.addEventListener('click', async function () {
+    document.getElementById('error')!.innerText = "";
+    try {
+      const res = await fetch(`/tuning/${name}/latest.json`);
 
-          const a = document.createElement('a');
-          a.innerText = 'Download';
-          a.href = `/tuning/${name}/${filename}`;
-          a.download = `${name}-${filename}`;
+      if (res.ok) {
+        const filename = res.headers.get('X-Filename');
 
-          const download = document.getElementById('download')!;
-          download.innerHTML = '';
-          download.appendChild(a);
+        const a = document.createElement('a');
+        a.innerText = 'Download';
+        a.href = `/tuning/${name}/${filename}`;
+        a.download = `${name}-${filename}`;
 
-          return res.json();
-        } else {
-          document.getElementById('rampChart')!.innerText = 'No data files found';
-          throw new Error();
-        }
-      })
-      .then(loadRegression)
-      .catch(console.log.bind(console));
+        const download = document.getElementById('download')!;
+        download.innerHTML = '';
+        download.appendChild(a);
+
+        const json = await res.json();
+
+        await loadRegression(json);
+      } else {
+        throw new Error("No data files found");
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      if (typeof err === 'string') {
+        document.getElementById('error')!.innerText = err;
+      } else if (err instanceof Error) {
+        document.getElementById('error')!.innerText = `${err}\n${err.stack}`;
+      }
+    }
   });
 
   // TODO: is there not a better way to type this?
@@ -538,7 +546,17 @@ export function installButtonHandlers<T>(name: string, loadRegression: (data: T)
     const reader = new FileReader();
     reader.onload = async function () {
       if (typeof reader.result === 'string') {
-        await loadRegression(JSON.parse(reader.result.trim()));
+        document.getElementById('error')!.innerText = "";
+        try {
+          await loadRegression(JSON.parse(reader.result.trim()));
+        } catch (err: unknown) {
+          console.error(err);
+          if (typeof err === 'string') {
+            document.getElementById('error')!.innerText = err;
+          } else if (err instanceof Error) {
+            document.getElementById('error')!.innerText = `${err}\n${err.stack}`;
+          }
+        }
       }
     };
 
