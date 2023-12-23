@@ -372,7 +372,9 @@ class LateralRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
         val view = dvf.make(hardwareMap)
         view.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL)
 
-        require(view.type == DriveType.MECANUM)
+        require(view.type == DriveType.MECANUM) {
+            "Only mecanum drives should run this op mode."
+        }
 
         val data = object {
             val type = view.type
@@ -551,7 +553,9 @@ class MecanumMotorDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() 
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
-        require(view.type == DriveType.MECANUM)
+        require(view.type == DriveType.MECANUM) {
+            "Only mecanum drives should run this op mode."
+        }
 
         val telemetry = MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().telemetry)
 
@@ -614,6 +618,40 @@ class MecanumMotorDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() 
                     m.power = 0.0
                 }
                 telemetry.addLine("Running Motor: None")
+            }
+
+            telemetry.update()
+        }
+    }
+}
+
+class DeadWheelDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() {
+    override fun runOpMode() {
+        val view = dvf.make(hardwareMap)
+
+        require(view.parEncs.isNotEmpty() && view.perpEncs.isNotEmpty()) {
+            "Only run this op mode if you're using dead wheels."
+        }
+
+        val telemetry = MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().telemetry)
+
+        waitForStart()
+
+        if (isStopRequested) return
+
+        while (opModeIsActive()) {
+            telemetry.addLine("Move each dead wheel individually and make sure the direction is correct")
+            telemetry.addLine()
+
+            telemetry.addLine("Parallel Dead Wheels (should increase forward)")
+            for (i in view.parEncs.indices) {
+                telemetry.addLine("  Wheel $i Position: ${view.parEncs[i].getPositionAndVelocity().position}")
+            }
+            telemetry.addLine()
+
+            telemetry.addLine("Perpendicular Dead Wheels (should increase leftward)")
+            for (i in view.perpEncs.indices) {
+                telemetry.addLine("  Wheel $i Position: ${view.perpEncs[i].getPositionAndVelocity().position}")
             }
 
             telemetry.update()
