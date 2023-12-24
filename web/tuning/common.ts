@@ -497,7 +497,7 @@ export async function loadLateralRampRegression(data: LateralRampData): Promise<
     const setData = await newLinearRegressionChart(
       document.getElementById('rampChart')!,
       [], [],
-      { title: 'Lateral Ramp Regression', slope: 'lateral in per tick', xLabel: 'lateral velocity [ticks]', yLabel: 'applied voltage [V]' },
+      { title: 'Lateral Ramp Regression', slope: 'lateral in per tick', xLabel: 'expected velocity from feedforward [ticks/s]', yLabel: 'actual velocity [in/s]' },
     );
 
     return (inPerTick: number, kV: number, kS: number) => {
