@@ -81,7 +81,7 @@ class DriveView(
         rightEncs: List<Encoder>,
         parEncs: List<Encoder>,
         perpEncs: List<Encoder>,
-        val imu: IMU,
+        val imu: LazyImu,
         val voltageSensor: VoltageSensor,
         val feedforwardFactory: FeedforwardFactory,
 ) {
@@ -256,7 +256,7 @@ class AngularRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
             }
 
             t.addSplit()
-            val av = view.imu.getRobotAngularVelocity(AngleUnit.RADIANS)
+            val av = view.imu.get().getRobotAngularVelocity(AngleUnit.RADIANS)
             val time = t.addSplit()
 
             data.angVels[0].times.add(time)
