@@ -121,6 +121,36 @@ class EnumSchema(val enumClass: Class<Enum<*>>) : MessageSchema {
     }
 }
 
+class ArraySchema(val schema: MessageSchema) : MessageSchema {
+    override fun encodedSize() = 8 + schema.encodedSize()
+
+    override fun encode(b: ByteBuffer) {
+        b.putInt(7) // tag
+        schema.encode(b)
+    }
+
+    fun cast(o: Any): Array<*> {
+        return when (o) {
+            is IntArray -> o.toTypedArray()
+            is LongArray -> o.toTypedArray()
+            is DoubleArray -> o.toTypedArray()
+            is BooleanArray -> o.toTypedArray()
+            is Array<*> -> o
+            else -> throw IllegalArgumentException("unsupported array type: ${o.javaClass}")
+        }
+    }
+
+    override fun encodedObjSize(o: Any) = 4 + cast(o).sumOf { schema.encodedObjSize(it!!) }
+
+    override fun encodeObj(o: Any, b: ByteBuffer) {
+        val a = cast(o)
+        b.putInt(a.size)
+        for (e in a) {
+            schema.encodeObj(e!!, b)
+        }
+    }
+}
+
 fun schemaOfClass(c: Class<*>): MessageSchema =
         when (c) {
             Int::class.java, Int::class.javaObjectType -> PrimitiveSchema.INT
@@ -129,7 +159,9 @@ fun schemaOfClass(c: Class<*>): MessageSchema =
             String::class.java, String::class.javaObjectType -> PrimitiveSchema.STRING
             Boolean::class.java, Boolean::class.javaObjectType -> PrimitiveSchema.BOOLEAN
             else -> {
-                if (c.isEnum) {
+                if (c.isArray) {
+                    ArraySchema(schemaOfClass(c.componentType!!))
+                } else if (c.isEnum) {
                     // TODO: is there a way to make this cast safe?
                     EnumSchema(c as Class<Enum<*>>)
                 } else {

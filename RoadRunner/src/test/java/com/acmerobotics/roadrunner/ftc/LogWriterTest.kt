@@ -52,16 +52,14 @@ object LogWriterTest {
                 var w: Array<Array<Array<Int>>>,
         )
 
-        assertThrows<IllegalArgumentException> {
-            ByteArrayOutputStream().use {
-                val writer = LogWriter(it)
-                writer.write("TEST_CHANNEL", ArrayMembers(
-                        intArrayOf(1, 2, 3),
-                        arrayOf(1, 2, 3),
-                        arrayOf(arrayOf(1, 2, 3)),
-                        arrayOf(arrayOf(arrayOf(1, 2, 3)))
-                ))
-            }
+        ByteArrayOutputStream().use {
+            val writer = LogWriter(it)
+            writer.write("TEST_CHANNEL", ArrayMembers(
+                    intArrayOf(1, 2, 3),
+                    arrayOf(1, 2, 3),
+                    arrayOf(arrayOf(1, 2, 3)),
+                    arrayOf(arrayOf(arrayOf(1, 2, 3)))
+            ))
         }
     }
 
