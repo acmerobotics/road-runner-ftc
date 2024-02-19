@@ -129,7 +129,6 @@ fun schemaOfClass(c: Class<*>): MessageSchema =
             String::class.java, String::class.javaObjectType -> PrimitiveSchema.STRING
             Boolean::class.java, Boolean::class.javaObjectType -> PrimitiveSchema.BOOLEAN
             else -> {
-                println(c.name)
                 if (c.isEnum) {
                     // TODO: is there a way to make this cast safe?
                     EnumSchema(c as Class<Enum<*>>)
