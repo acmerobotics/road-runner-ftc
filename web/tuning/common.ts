@@ -1,5 +1,5 @@
 import Plotly from 'plotly.js-dist-min';
-import regression, { DataPoint } from 'regression';
+import regression, {DataPoint} from 'regression';
 
 // TODO: time-interpolate data
 
@@ -77,6 +77,12 @@ export function inverseOverflow(input: number, estimate: number) {
 function fixVels(ts: number[], xs: number[], vs: number[]) {
   if (ts.length !== xs.length || ts.length !== vs.length) {
     throw new Error(`${ts.length} !== ${xs.length} !== ${vs.length}`);
+  }
+  // check if the second to last number in the data is non-integer
+  if (xs[-2] !== Math.round(xs[-2])) {
+    return numDerivOffline(ts, xs).map((est, i) => {
+      return (vs[i + 1], est)
+    });
   }
 
   return numDerivOffline(ts, xs).map((est, i) => inverseOverflow(vs[i + 1], est));

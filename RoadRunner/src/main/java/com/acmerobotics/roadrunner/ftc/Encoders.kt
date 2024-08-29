@@ -9,8 +9,8 @@ import kotlin.math.min
 import kotlin.math.round
 
 class PositionVelocityPair(
-        @JvmField val position: Int, @JvmField val velocity: Int,
-        @JvmField val rawPosition: Int, @JvmField val rawVelocity: Int
+    @JvmField val position: Double, @JvmField val velocity: Double,
+    @JvmField val rawPosition: Double, @JvmField val rawVelocity: Double
  )
 
 sealed interface Encoder {
@@ -23,7 +23,7 @@ sealed interface Encoder {
 class RawEncoder(private val m: DcMotorEx) : Encoder {
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
 
-    private fun applyDirection(x: Int): Int {
+    private fun applyDirection(x: Double): Double {
         var x = x
         if (m.direction == DcMotorSimple.Direction.REVERSE) {
             x = -x
@@ -37,8 +37,8 @@ class RawEncoder(private val m: DcMotorEx) : Encoder {
     }
 
     override fun getPositionAndVelocity(): PositionVelocityPair {
-        val rawPosition = m.currentPosition
-        val rawVelocity = m.velocity.toInt()
+        val rawPosition = m.currentPosition.toDouble()
+        val rawVelocity = m.velocity
         return PositionVelocityPair(
                 applyDirection(rawPosition),
                 applyDirection(rawVelocity),
@@ -70,7 +70,7 @@ class RollingThreeMedian {
 // by the time they reach here, they are widened into an int and possibly negated
 private const val CPS_STEP = 0x10000
 
-private fun inverseOverflow(input: Int, estimate: Double): Int {
+private fun inverseOverflow(input: Int, estimate: Double): Double {
     // convert to uint16
     var real = input and 0xFFFF
     // initial, modulo-based correction: it can recover the remainder of 5 of the upper 16 bits
@@ -78,11 +78,11 @@ private fun inverseOverflow(input: Int, estimate: Double): Int {
     real += real % 20 / 4 * CPS_STEP
     // estimate-based correction: it finds the nearest multiple of 5 to correct the upper bits by
     real += round((estimate - real) / (5 * CPS_STEP)).toInt() * 5 * CPS_STEP
-    return real
+    return real.toDouble()
 }
 
 class OverflowEncoder(@JvmField val encoder: RawEncoder) : Encoder {
-    private var lastPosition: Int = encoder.getPositionAndVelocity().position
+    private var lastPosition: Double = encoder.getPositionAndVelocity().position
     private val lastUpdate = ElapsedTime()
 
     private val velEstimate = RollingThreeMedian()
@@ -97,7 +97,7 @@ class OverflowEncoder(@JvmField val encoder: RawEncoder) : Encoder {
 
         return PositionVelocityPair(
                 p.position,
-                inverseOverflow(p.velocity, v),
+            inverseOverflow(p.velocity.toInt(), v),
                 p.rawPosition,
                 p.rawVelocity,
         )
