@@ -82,26 +82,6 @@ function fixVels(ts: number[], xs: number[], vs: number[]) {
   return numDerivOffline(ts, xs).map((est, i) => inverseOverflow(vs[i + 1], est));
 }
 
-// see https://github.com/FIRST-Tech-Challenge/FtcRobotController/issues/617
-function fixAngVels(vs: number[]) {
-  if (vs.length === 0) {
-    return [];
-  }
-
-  let offset = 0;
-  let lastV = vs[0];
-  const vsFixed = [lastV];
-  for (let i = 1; i < vs.length; i++) {
-    if (Math.abs(vs[i] - lastV) > Math.PI) {
-      offset -= Math.sign(vs[i] - lastV) * 2 * Math.PI;
-    }
-    vsFixed.push(offset + vs[i]);
-    lastV = vs[i];
-  }
-
-  return vsFixed;
-}
-
 type RegressionOptions = {
   title: string;
   slope: string;
@@ -320,7 +300,7 @@ type AngularRampData = {
 
 function getPosZAngVelocity(data: AngularRampData) {
   const p = data.angVels.reduce<[number, number, boolean, number[]]>((acc, vsArg, axisIdx) => {
-    const vs = fixAngVels(vsArg.values.slice(0, -1));
+    const vs = vsArg.values.slice(0, -1);
     const maxV = vs.reduce((acc, v) => Math.max(acc, v), 0);
     const minV = vs.reduce((acc, v) => Math.max(acc, v), 0);
     const [accMaxV, _axisIdx, _axisRev, _] = acc;
