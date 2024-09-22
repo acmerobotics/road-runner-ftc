@@ -1,8 +1,8 @@
 buildscript {
-    ext.min_sdk_version = "8.2.0"
+    ext.min_sdk_version = "10.0.0"
     ext.min_rr_version = "1.0.0-beta6"
     ext.min_dash_version = "0.4.10"
-    ext.rr_ftc_version = "0.1.13"
+    ext.rr_ftc_version = "0.1.14"
 }
 
 plugins {
