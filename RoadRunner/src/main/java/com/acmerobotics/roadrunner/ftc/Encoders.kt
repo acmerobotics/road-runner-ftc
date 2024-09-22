@@ -13,7 +13,7 @@ class PositionVelocityPair(
     @JvmField val rawPosition: Double, @JvmField val rawVelocity: Double
  )
 
-sealed interface Encoder {
+interface Encoder {
     fun getPositionAndVelocity(): PositionVelocityPair
 
     val controller: DcMotorController
