@@ -539,7 +539,11 @@ export function installButtonHandlers<T>(name: string, loadRegression: (data: T)
       if (typeof err === 'string') {
         document.getElementById('error')!.innerText = err;
       } else if (err instanceof Error) {
-        document.getElementById('error')!.innerText = `${err}\n${err.stack}`;
+        if (import.meta.env.DEV) {
+          document.getElementById('error')!.innerText = `${err}\n${err.stack}`;
+        } else {
+          document.getElementById('error')!.innerText = err.message;
+        }
       }
     }
   });
@@ -562,7 +566,11 @@ export function installButtonHandlers<T>(name: string, loadRegression: (data: T)
           if (typeof err === 'string') {
             document.getElementById('error')!.innerText = err;
           } else if (err instanceof Error) {
-            document.getElementById('error')!.innerText = `${err}\n${err.stack}`;
+            if (import.meta.env.DEV) {
+              document.getElementById('error')!.innerText = `${err}\n${err.stack}`;
+            } else {
+              document.getElementById('error')!.innerText = err.message;
+            }
           }
         }
       }
