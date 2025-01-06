@@ -281,6 +281,7 @@ private fun avgPos(es: List<Encoder>) = es.sumOf { it.getPositionAndVelocity().p
 
 class ForwardPushTest(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
+        val telemetry = MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().telemetry)
         val view = dvf.make(hardwareMap)
 
         for (m in view.motors) {
@@ -439,6 +440,7 @@ fun lateralSum(view: DriveView): Double {
 
 class LateralPushTest(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
+        val telemetry = MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().telemetry)
         val view = dvf.make(hardwareMap)
 
         require(view.type == DriveType.MECANUM) {
