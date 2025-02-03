@@ -1,6 +1,6 @@
 package com.acmerobotics.roadrunner.ftc
 
-import com.qualcomm.robotcore.hardware.DcMotorController
+import com.qualcomm.hardware.lynx.LynxModule
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.util.ElapsedTime
@@ -9,36 +9,42 @@ import kotlin.math.min
 import kotlin.math.round
 
 class PositionVelocityPair(
-        @JvmField val position: Int, @JvmField val velocity: Int,
-        @JvmField val rawPosition: Int, @JvmField val rawVelocity: Int
+        @JvmField val position: Int, @JvmField val velocity: Int?,
+        @JvmField val rawPosition: Int, @JvmField val rawVelocity: Int?
  )
 
 sealed interface Encoder {
-    fun getPositionAndVelocity(): PositionVelocityPair
-
-    val controller: DcMotorController
     var direction: DcMotorSimple.Direction
+
+    fun getPositionAndVelocity(): PositionVelocityPair
 }
 
-class RawEncoder(private val m: DcMotorEx) : Encoder {
+interface EncoderGroup {
+    val encoders: List<Encoder>
+    val unwrappedEncoders: List<Encoder> // encoders without overflow correction
+
+    fun bulkRead()
+}
+
+class RawEncoder(val motor: DcMotorEx) : Encoder {
     override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
 
     private fun applyDirection(x: Int): Int {
-        var x = x
-        if (m.direction == DcMotorSimple.Direction.REVERSE) {
-            x = -x
+        var y = x
+        if (motor.direction == DcMotorSimple.Direction.REVERSE) {
+            y = -y
         }
 
         if (direction == DcMotorSimple.Direction.REVERSE) {
-            x = -x
+            y = -y
         }
 
-        return x
+        return y
     }
 
     override fun getPositionAndVelocity(): PositionVelocityPair {
-        val rawPosition = m.currentPosition
-        val rawVelocity = m.velocity.toInt()
+        val rawPosition = motor.currentPosition
+        val rawVelocity = motor.velocity.toInt()
         return PositionVelocityPair(
                 applyDirection(rawPosition),
                 applyDirection(rawVelocity),
@@ -46,9 +52,6 @@ class RawEncoder(private val m: DcMotorEx) : Encoder {
                 rawVelocity,
         )
     }
-
-    override val controller: DcMotorController
-        get() = m.controller
 }
 
 class RollingThreeMedian {
@@ -97,18 +100,44 @@ class OverflowEncoder(@JvmField val encoder: RawEncoder) : Encoder {
 
         return PositionVelocityPair(
                 p.position,
-                inverseOverflow(p.velocity, v),
+                p.velocity?.let { inverseOverflow(it, v) },
                 p.rawPosition,
                 p.rawVelocity,
         )
     }
-
-    override val controller: DcMotorController
-        get() = encoder.controller
 
     override var direction: DcMotorSimple.Direction
         get() = encoder.direction
         set(value) {
             encoder.direction = value
         }
+}
+
+// TODO: Ideally there would be a separate group for each Lynx module, though this is an easier
+// API to deal with (and still permits the more efficient / precise option)
+class LynxQuadratureEncoderGroup(
+    val modules: List<LynxModule>,
+    override val encoders: List<Encoder>,
+) : EncoderGroup {
+    override val unwrappedEncoders = encoders.map {
+        when (it) {
+            is OverflowEncoder -> it.encoder
+            else -> it
+        }
+    }
+
+    init {
+        for (module in modules) {
+            if (module.bulkCachingMode != LynxModule.BulkCachingMode.AUTO) {
+                module.bulkCachingMode = LynxModule.BulkCachingMode.AUTO
+            }
+        }
+    }
+
+    override fun bulkRead() {
+        for (module in modules) {
+            module.clearBulkCache()
+            module.bulkData
+        }
+    }
 }
