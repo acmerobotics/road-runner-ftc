@@ -79,6 +79,7 @@ repositories {
 
 dependencies {
     api "org.firstinspires.ftc:RobotCore:$min_sdk_version"
+    api "org.firstinspires.ftc:Hardware:$min_sdk_version"
 
     api "com.acmerobotics.roadrunner:core:$min_rr_version"
     api "com.acmerobotics.roadrunner:actions:$min_rr_version"
