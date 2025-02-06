@@ -730,6 +730,7 @@ class DeadWheelDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() {
     }
 }
 
+/* Originally written by j5155; ported to Kotlin by zach.waffle */
 class OTOSAngularScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     override fun runOpMode() {
         var radsTurned = 0.0
@@ -765,6 +766,7 @@ class OTOSLinearScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     }
 }
 
+/* Originally written by j5155; ported to Kotlin by zach.waffle */
 class OTOSHeadingOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     @Throws(InterruptedException::class)
     override fun runOpMode() {
@@ -782,6 +784,7 @@ class OTOSHeadingOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     }
 }
 
+/* Originally written by j5155; ported to Kotlin by zach.waffle */
 class OTOSPositionOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     @Throws(InterruptedException::class)
     override fun runOpMode() {
