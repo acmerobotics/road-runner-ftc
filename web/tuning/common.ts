@@ -295,6 +295,17 @@ type AngularRampData = {
   angVels: [Signal, Signal, Signal];
 };
 
+// This only applies to Pinpoint encoders for now
+function populateMissingVelocities(pss: Signal[], vss: Signal[]) {
+  vss.forEach((vs, i) => {
+    if (vs.values.length === 0) {
+      const ps = pss[i];
+      vs.times = ps.times;
+      vs.values = numDerivOffline(ps.values, ps.times);
+    }
+  });
+}
+
 // We skip the last measurement because it may be corrupted. Perhaps an artifact of
 // poisoned Lynx modules?
 
@@ -325,26 +336,31 @@ function getPosZAngVelocity(data: AngularRampData) {
 export async function loadDeadWheelAngularRampRegression(data: AngularRampData): Promise<string[]> {
   const angVels = getPosZAngVelocity(data);
 
+  populateMissingVelocities(data.parEncPositions, data.parEncVels);
+  populateMissingVelocities(data.perpEncPositions, data.perpEncVels);
+
   const deadWheelCharts = document.getElementById('deadWheelCharts')!;
   data.parEncVels.forEach((vs, i) => {
+    const ps = data.parEncPositions[i];
     const div = document.createElement('div');
     newLinearRegressionChart(div,
       angVels.slice(1, -1),
       fixVels(
         vs.times.slice(0, -1),
-        data.parEncPositions[i].values.slice(0, -1),
+        ps.values.slice(0, -1),
         vs.values.slice(0, -1)
       ),
       { title: `Parallel Wheel ${i} Regression`, slope: 'y-position', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' });
     deadWheelCharts.appendChild(div);
   });
   data.perpEncVels.forEach((vs, i) => {
+    const ps = data.perpEncPositions[i]
     const div = document.createElement('div');
     newLinearRegressionChart(div,
       angVels.slice(1, -1),
       fixVels(
         vs.times.slice(0, -1),
-        data.perpEncPositions[i].values.slice(0, -1),
+        ps.values.slice(0, -1),
         vs.values.slice(0, -1)
       ),
       { title: `Perpendicular Wheel ${i} Regression`, slope: 'x-position', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' });
@@ -427,6 +443,8 @@ type ForwardRampData = {
 };
 
 export async function loadForwardRampRegression(data: ForwardRampData): Promise<string[]> {
+  populateMissingVelocities(data.forwardEncPositions, data.forwardEncVels);
+
   const forwardEncVels = data.forwardEncVels.flatMap((vs, i) =>
     fixVels(vs.times.slice(0, -1), data.forwardEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
   const appliedVoltages = data.forwardEncVels.flatMap(() => {
@@ -457,6 +475,8 @@ type LateralRampData = {
 };
 
 export async function loadLateralRampRegression(data: LateralRampData): Promise<string[]> {
+  populateMissingVelocities(data.perpEncPositions, data.perpEncVels);
+
   const perpEncVels = data.perpEncVels.flatMap((vs, i) =>
     fixVels(vs.times.slice(0, -1), data.perpEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
   const appliedVoltages = data.perpEncVels.flatMap(() => {
