@@ -17,7 +17,11 @@ class ImuInitMessage(
         val timedOut: Boolean,
 )
 
-class LazyImu @JvmOverloads constructor(
+interface LazyImu {
+    fun get(): IMU
+}
+
+class LazyHardwareMapImu @JvmOverloads constructor(
         private val hardwareMap: HardwareMap,
         private val name: String,
         private val orientation: ImuOrientationOnRobot,
