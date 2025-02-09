@@ -26,10 +26,10 @@ class LazyHardwareMapImu @JvmOverloads constructor(
         private val name: String,
         private val orientation: ImuOrientationOnRobot,
         private val timeoutMs: Int = 500,
-) {
+) : LazyImu {
     private var imu: IMU? = null
 
-    fun get(): IMU {
+    override fun get(): IMU {
         if (imu == null) {
             imu = hardwareMap.get(IMU::class.java, name)
             imu!!.initialize(IMU.Parameters(orientation))
