@@ -18,30 +18,47 @@ enum class EncoderDirection {
     PERPENDICULAR
 }
 
-class OTOSEncoder(val otos: SparkFunOTOS, val ed: EncoderDirection) : Encoder {
+class OTOSView(val otos: SparkFunOTOS) {
+    var pose = Pose2D()
+        private set
+
+    var vel = Pose2D()
+        private set
+
+    fun update() = otos.getPosVelAcc(pose, vel, Pose2D())
+}
+
+class OTOSEncoder(val view: OTOSView, val ed: EncoderDirection) : Encoder {
     override var direction = DcMotorSimple.Direction.FORWARD
 
     override fun getPositionAndVelocity(): PositionVelocityPair {
-        val otosPose = Pose2D()
-        val otosVel = Pose2D()
-        otos.getPosVelAcc(otosPose, otosVel, Pose2D())
-
         return when (ed) {
-            EncoderDirection.PARALLEL -> PositionVelocityPair(otosPose.x.toInt(), otosVel.x.toInt(), otosPose.x.toInt(), otosVel.x.toInt())
-            EncoderDirection.PERPENDICULAR -> PositionVelocityPair(otosPose.y.toInt(), otosVel.y.toInt(), otosPose.y.toInt(), otosVel.y.toInt())
+            EncoderDirection.PARALLEL -> PositionVelocityPair(view.pose.x.toInt(), view.vel.x.toInt(), view.pose.x.toInt(), view.vel.x.toInt())
+            EncoderDirection.PERPENDICULAR -> PositionVelocityPair(view.pose.y.toInt(), view.vel.y.toInt(), view.pose.y.toInt(), view.vel.y.toInt())
         }
     }
 }
 
-class OTOSIMU(val otos: SparkFunOTOS) : IMU, HardwareDevice by otos {
-    override fun initialize(p0: IMU.Parameters?) = otos.initialize()
+class OTOSEncoderGroup(val view: OTOSView) : EncoderGroup {
+    override val encoders = listOf(
+        OTOSEncoder(view, EncoderDirection.PARALLEL),
+        OTOSEncoder(view, EncoderDirection.PERPENDICULAR),
+    )
+
+    override val unwrappedEncoders = encoders
+
+    override fun bulkRead() = view.update()
+}
+
+class OTOSIMU(val view: OTOSView) : LazyImu, IMU, HardwareDevice by view.otos {
+    override fun initialize(p0: IMU.Parameters?) = view.otos.initialize()
 
     override fun resetYaw() {
-        otos.calibrateImu()
+        view.otos.calibrateImu()
     }
 
     override fun getRobotYawPitchRollAngles(): YawPitchRollAngles {
-        return YawPitchRollAngles(AngleUnit.RADIANS, otos.position.h, 0.0, 0.0, 0L)
+        return YawPitchRollAngles(AngleUnit.RADIANS, view.pose.h, 0.0, 0.0, 0L)
     }
 
     override fun getRobotOrientation(
@@ -57,7 +74,8 @@ class OTOSIMU(val otos: SparkFunOTOS) : IMU, HardwareDevice by otos {
     }
 
     override fun getRobotAngularVelocity(p0: AngleUnit?): AngularVelocity {
-        return AngularVelocity(AngleUnit.RADIANS, 0.0f, 0.0f, otos.velocity.h.toFloat(), 0L)
+        return AngularVelocity(AngleUnit.RADIANS, 0.0f, 0.0f, view.vel.h.toFloat(), 0L)
     }
 
+    override fun get() = this
 }
