@@ -1,6 +1,5 @@
 package com.acmerobotics.roadrunner.ftc
 
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.IMU
 import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot
@@ -18,30 +17,19 @@ class ImuInitMessage(
         val timedOut: Boolean,
 )
 
-class LazyImu @JvmOverloads constructor(
-    private val hardwareMap: HardwareMap,
-    private val name: String,
-    private val orientation: ImuOrientationOnRobot = RevHubOrientationOnRobot(
-        RevHubOrientationOnRobot.LogoFacingDirection.UP,
-        RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
-    ),
-    private val timeoutMs: Int = 500,
-) {
-    @JvmOverloads constructor(
-        hardwareMap: HardwareMap,
-        imu: IMU,
-        timeoutMs: Int = 500
-    ) : this(
-        hardwareMap,
-        imu.deviceName,
-        timeoutMs=timeoutMs)
-    {
-        this.imu = imu
-    }
+interface LazyImu {
+    fun get(): IMU
+}
 
-    var imu: IMU? = null
+class LazyHardwareMapImu @JvmOverloads constructor(
+        private val hardwareMap: HardwareMap,
+        private val name: String,
+        private val orientation: ImuOrientationOnRobot,
+        private val timeoutMs: Int = 500,
+) : LazyImu {
+    private var imu: IMU? = null
 
-    fun get(): IMU {
+    override fun get(): IMU {
         if (imu == null) {
             imu = hardwareMap.get(IMU::class.java, name)
             imu!!.initialize(IMU.Parameters(orientation))

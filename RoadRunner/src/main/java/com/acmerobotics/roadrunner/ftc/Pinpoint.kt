@@ -59,7 +59,7 @@ class PinpointEncoderGroup(
 }
 
 // Only the methods used by tuning routines are implemented
-class PinpointIMU(val pinpoint: PinpointView) : IMU {
+class PinpointIMU(val pinpoint: PinpointView) : IMU, LazyImu {
     override fun getManufacturer() = HardwareDevice.Manufacturer.Other
     override fun getDeviceName() = ""
     override fun getConnectionInfo() = ""
@@ -96,4 +96,6 @@ class PinpointIMU(val pinpoint: PinpointView) : IMU {
         return AngularVelocity(angleUnit, 0.0f, 0.0f,
             pinpoint.getHeadingVelocity(), 0L)
     }
+
+    override fun get() = this
 }
