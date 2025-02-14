@@ -53,9 +53,7 @@ class OTOSEncoderGroup(val view: OTOSView) : EncoderGroup {
 class OTOSIMU(val view: OTOSView) : LazyImu, IMU, HardwareDevice by view.otos {
     override fun initialize(p0: IMU.Parameters?) = view.otos.initialize()
 
-    override fun resetYaw() {
-        view.otos.calibrateImu()
-    }
+    override fun resetYaw() = fail()
 
     override fun getRobotYawPitchRollAngles(): YawPitchRollAngles {
         return YawPitchRollAngles(AngleUnit.RADIANS, view.pose.h, 0.0, 0.0, 0L)
@@ -65,17 +63,15 @@ class OTOSIMU(val view: OTOSView) : LazyImu, IMU, HardwareDevice by view.otos {
         p0: AxesReference?,
         p1: AxesOrder?,
         p2: AngleUnit?
-    ): Orientation {
-       throw NotImplementedError()
-    }
+    ): Orientation = fail()
 
-    override fun getRobotOrientationAsQuaternion(): Quaternion {
-        TODO("Not yet implemented")
-    }
+    override fun getRobotOrientationAsQuaternion(): Quaternion = fail()
 
     override fun getRobotAngularVelocity(p0: AngleUnit?): AngularVelocity {
         return AngularVelocity(AngleUnit.RADIANS, 0.0f, 0.0f, view.vel.h.toFloat(), 0L)
     }
 
-    override fun get() = this
+    override fun get() = this as IMU
+
+    private fun fail(): Nothing = throw NotImplementedError("Not Needed For Tuning")
 }
