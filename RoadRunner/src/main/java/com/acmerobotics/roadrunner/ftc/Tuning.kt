@@ -306,6 +306,7 @@ private fun avgPos(es: List<Encoder>) = es.sumOf { it.getPositionAndVelocity().p
 
 class ForwardPushTest(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
         val view = dvf.make(hardwareMap)
 
         for (m in view.motors) {
@@ -474,6 +475,7 @@ fun lateralSum(view: DriveView): Double {
 
 class LateralPushTest(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
         val view = dvf.make(hardwareMap)
 
         require(view.type == DriveType.MECANUM) {
@@ -513,7 +515,7 @@ class ManualFeedforwardTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     }
 
     override fun runOpMode() {
-        val telemetry = MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().telemetry)
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         val view = dvf.make(hardwareMap)
         val profile = TimeProfile(constantProfile(
@@ -615,7 +617,7 @@ class MecanumMotorDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() 
             "Only mecanum drives should run this op mode."
         }
 
-        val telemetry = MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().telemetry)
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         telemetry.addLine("Press play to begin the debugging op mode")
         telemetry.update()
@@ -695,7 +697,7 @@ class DeadWheelDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() {
             "Only run this op mode if you're using dead wheels."
         }
 
-        val telemetry = MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().telemetry)
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         waitForStart()
 
