@@ -2,7 +2,6 @@ package com.acmerobotics.roadrunner.ftc
 
 import com.acmerobotics.roadrunner.Pose2d
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS
-import com.qualcomm.hardware.sparkfun.SparkFunOTOS.Pose2D
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareDevice
 import com.qualcomm.robotcore.hardware.IMU
@@ -18,12 +17,12 @@ import kotlin.math.round
 fun rawPosVelPair(pos: Int, vel: Int) = PositionVelocityPair(pos, vel, pos, vel)
 fun rawPosVelPair(pos: Double, vel: Double) = rawPosVelPair(round(pos).toInt(), round(vel).toInt())
 
-fun Pose2D.fromOTOSPose() = Pose2d(x, y, h)
+fun SparkFunOTOS.Pose2D.toRRPose() = Pose2d(x, y, h)
 fun Pose2d.toOTOSPose() = SparkFunOTOS.Pose2D(position.x, position.y, heading.toDouble())
 
 class OTOSEncoderGroup(val otos: SparkFunOTOS) : EncoderGroup {
-    var pos = Pose2D()
-    var vel = Pose2D()
+    var pos = SparkFunOTOS.Pose2D()
+    var vel = SparkFunOTOS.Pose2D()
 
     override val encoders = listOf(
         ParallelOTOSEncoder(this),
@@ -33,7 +32,7 @@ class OTOSEncoderGroup(val otos: SparkFunOTOS) : EncoderGroup {
     override val unwrappedEncoders = encoders
 
     override fun bulkRead() {
-        otos.getPosVelAcc(pos, vel, Pose2D())
+        otos.getPosVelAcc(pos, vel, SparkFunOTOS.Pose2D())
     }
 }
 
