@@ -4,10 +4,8 @@ import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry
 import com.acmerobotics.roadrunner.MecanumKinematics
 import com.acmerobotics.roadrunner.MotorFeedforward
-import com.acmerobotics.roadrunner.Pose2d
 import com.acmerobotics.roadrunner.PoseVelocity2d
 import com.acmerobotics.roadrunner.PoseVelocity2dDual
-import com.acmerobotics.roadrunner.Rotation2d
 import com.acmerobotics.roadrunner.TankKinematics
 import com.acmerobotics.roadrunner.Time
 import com.acmerobotics.roadrunner.TimeProfile
@@ -735,6 +733,8 @@ class DeadWheelDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() {
 /* Originally written by j5155; ported to Kotlin by zach.waffle */
 class OTOSAngularScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     override fun runOpMode() {
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
+
         var radsTurned = 0.0
         telemetry.addLine("OTOS Angular Scalar Tuner")
         telemetry.addLine("Press START, then rotate the robot on the ground 10 times (3600 degrees).")
@@ -753,6 +753,8 @@ class OTOSAngularScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
 
 class OTOSLinearScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     override fun runOpMode() {
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
+
         telemetry.addLine("OTOS Linear Scalar Tuner")
         telemetry.addLine("Press START, then push the robot a known distance.")
         telemetry.update()
@@ -772,6 +774,8 @@ class OTOSLinearScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
 class OTOSHeadingOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     @Throws(InterruptedException::class)
     override fun runOpMode() {
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
+
         telemetry.addLine("OTOS Heading Offset Tuner")
         telemetry.addLine("Line the side of the robot against a wall and Press START.")
         telemetry.addLine("Then push the robot forward some distance.")
@@ -790,6 +794,8 @@ class OTOSHeadingOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
 class OTOSPositionOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     @Throws(InterruptedException::class)
     override fun runOpMode() {
+        telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
+
         telemetry.addLine("OTOS Position Offset Tuner")
         telemetry.addLine("Line the robot against the corner of two walls facing forward and Press START.")
         telemetry.addLine("Then rotate the robot exactly 180 degrees and press it back into the corner.")
