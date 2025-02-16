@@ -4,8 +4,10 @@ import com.acmerobotics.dashboard.FtcDashboard
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry
 import com.acmerobotics.roadrunner.MecanumKinematics
 import com.acmerobotics.roadrunner.MotorFeedforward
+import com.acmerobotics.roadrunner.Pose2d
 import com.acmerobotics.roadrunner.PoseVelocity2d
 import com.acmerobotics.roadrunner.PoseVelocity2dDual
+import com.acmerobotics.roadrunner.Rotation2d
 import com.acmerobotics.roadrunner.TankKinematics
 import com.acmerobotics.roadrunner.Time
 import com.acmerobotics.roadrunner.TimeProfile
@@ -13,6 +15,7 @@ import com.acmerobotics.roadrunner.Vector2d
 import com.acmerobotics.roadrunner.constantProfile
 import com.google.gson.annotations.SerializedName
 import com.qualcomm.hardware.lynx.LynxModule
+import com.qualcomm.hardware.sparkfun.SparkFunOTOS
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
@@ -21,7 +24,9 @@ import com.qualcomm.robotcore.hardware.VoltageSensor
 import com.qualcomm.robotcore.util.ElapsedTime
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
+import kotlin.math.abs
 import kotlin.math.absoluteValue
+import kotlin.math.atan2
 import kotlin.math.max
 import kotlin.math.min
 
@@ -722,6 +727,84 @@ class DeadWheelDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() {
                 telemetry.addLine("  Wheel $i Position: ${view.encoder(view.perpEncs[i]).getPositionAndVelocity().position}")
             }
 
+            telemetry.update()
+        }
+    }
+}
+
+/* Originally written by j5155; ported to Kotlin by zach.waffle */
+class OTOSAngularScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+    override fun runOpMode() {
+        var radsTurned = 0.0
+        telemetry.addLine("OTOS Angular Scalar Tuner")
+        telemetry.addLine("Press START, then rotate the robot on the ground 10 times (3600 degrees).")
+        telemetry.update()
+        waitForStart()
+        while (opModeIsActive()) {
+            val otosHeading = otos.position.h
+            radsTurned += otosHeading
+            telemetry.addData("OTOS Heading (radians)", otosHeading)
+            telemetry.addData("Uncorrected Degrees Turned", Math.toDegrees(radsTurned))
+            telemetry.addData("Calculated Angular Scalar", 3600 / Math.toDegrees(radsTurned))
+            telemetry.update()
+        }
+    }
+}
+
+class OTOSLinearScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+    override fun runOpMode() {
+        telemetry.addLine("OTOS Linear Scalar Tuner")
+        telemetry.addLine("Press START, then push the robot a known distance.")
+        telemetry.update()
+
+        waitForStart()
+
+        while (opModeIsActive()) {
+            val pose = otos.position
+            telemetry.addData("Uncorrected Distance Traveled Y", pose.x)
+            telemetry.addData("Uncorrected Distance Traveled X", pose.y)
+            telemetry.update()
+        }
+    }
+}
+
+/* Originally written by j5155; ported to Kotlin by zach.waffle */
+class OTOSHeadingOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+    @Throws(InterruptedException::class)
+    override fun runOpMode() {
+        telemetry.addLine("OTOS Heading Offset Tuner")
+        telemetry.addLine("Line the side of the robot against a wall and Press START.")
+        telemetry.addLine("Then push the robot forward some distance.")
+        telemetry.update()
+        waitForStart()
+        while (opModeIsActive()) {
+            val pose = otos.position
+            telemetry.addData("Heading Offset (radians, enter this one into OTOSLocalizer!)", atan2(pose.y, pose.x))
+            telemetry.addData("Heading Offset (degrees)", Math.toDegrees(atan2(pose.y, pose.x)))
+            telemetry.update()
+        }
+    }
+}
+
+/* Originally written by j5155; ported to Kotlin by zach.waffle */
+class OTOSPositionOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+    @Throws(InterruptedException::class)
+    override fun runOpMode() {
+        telemetry.addLine("OTOS Position Offset Tuner")
+        telemetry.addLine("Line the robot against the corner of two walls facing forward and Press START.")
+        telemetry.addLine("Then rotate the robot exactly 180 degrees and press it back into the corner.")
+        telemetry.addLine("Finally, copy the pose offset into OTOSLocalizer.")
+        telemetry.update()
+        waitForStart()
+        while (opModeIsActive()) {
+            val pose = otos.position
+            telemetry.addData("Heading (deg)", Math.toDegrees(pose.h))
+            if (abs(Math.toDegrees(pose.h)) > 175) {
+                telemetry.addData("X Offset", pose.x / 2)
+                telemetry.addData("Y Offset", pose.y / 2)
+            } else {
+                telemetry.addLine("Rotate the robot 180 degrees and align it to the corner again.")
+            }
             telemetry.update()
         }
     }
