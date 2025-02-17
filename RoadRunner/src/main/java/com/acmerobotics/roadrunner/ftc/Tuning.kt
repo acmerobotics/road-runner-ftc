@@ -184,6 +184,10 @@ private fun recordUnwrappedEncoderData(gs: List<EncoderGroup>, ts: List<Double>,
     }
 }
 
+fun shouldFixVels(view: DriveView, er: EncoderRef): Boolean {
+    return view.encoderGroups[er.groupIndex] is LynxQuadratureEncoderGroup
+}
+
 class AngularRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
     companion object {
         @JvmField
@@ -210,6 +214,10 @@ class AngularRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
             val rightEncVels = view.rightEncs.map { MutableSignal() }
             val parEncVels = view.parEncs.map { MutableSignal() }
             val perpEncVels = view.perpEncs.map { MutableSignal() }
+            val leftEncFixVels = view.leftEncs.map { shouldFixVels(view, it) }
+            val rightEncFixVels = view.rightEncs.map { shouldFixVels(view, it) }
+            val parEncFixVels = view.parEncs.map { shouldFixVels(view, it) }
+            val perpEncFixVels = view.perpEncs.map { shouldFixVels(view, it) }
             val angVels = listOf(MutableSignal(), MutableSignal(), MutableSignal())
         }
 
@@ -353,6 +361,7 @@ class ForwardRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
             val voltages = MutableSignal()
             val forwardEncPositions = view.forwardEncs.map { MutableSignal() }
             val forwardEncVels = view.forwardEncs.map { MutableSignal() }
+            val forwardEncFixVels = view.forwardEncs.map { shouldFixVels(view, it) }
         }
 
         waitForStart()
@@ -421,6 +430,7 @@ class LateralRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
             val voltages = MutableSignal()
             val perpEncPositions = view.perpEncs.map { MutableSignal() }
             val perpEncVels = view.perpEncs.map { MutableSignal() }
+            val perpEncFixVels = view.perpEncs.map { shouldFixVels(view, it) }
         }
 
         waitForStart()

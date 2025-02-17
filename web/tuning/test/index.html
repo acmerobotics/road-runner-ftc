@@ -1,110 +1,104 @@
 <!doctype html>
 <html>
-  <head>
-    <title>RR Tests</title>
 
-    <style>
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
+<head>
+  <title>RR Data Loading Test</title>
 
-#content {
-  max-width: 600px;
-  margin: auto;
-}
+  <link rel="stylesheet" href="../style.css" />
 
-.bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  <script type="module">
+    import { prepareAngularRampData, prepareForwardRampData, prepareLateralRampData } from '../common.ts';
 
-fieldset {
-  display: flex;
-  justify-content: space-between;
-}
-    </style>
+    function arange(x0, x1, n) {
+      const dx = (x1 - x0) / (n - 1);
+      const xs = [];
+      for (let i = 0; i < n; i++) {
+        xs.push(x0 + i * dx);
+      }
+      return xs;
+    }
 
-    <script type="module">
-import Plotly from "plotly.js-dist-min";
-import {numDerivOffline, numDerivOnline, inverseOverflow} from '../common.ts';
+    function srange(t0, t1, x0, x1, n) {
+      return {
+        times: arange(t0, t1, n),
+        values: arange(x0, x1, n),
+      };
+    }
 
-function newChart(container, xs, ys, options) {
-  if (xs.length !== ys.length) {
-    throw new Error();
-  }
+    function constAccelPos(t0, t1, a, n) {
+      const dt = (t1 - t0) / (n - 1);
+      const ts = arange(t0, t1, n);
+      const xs = [];
+      let x = 0;
+      for (let i = 0; i < n; i++) {
+        x += 0.5 * a * dt * dt;
+        xs.push(x);
+      }
+      return {
+        times: ts,
+        values: xs,
+      };
+    }
+    function constAccelVel(t0, t1, a, n) {
+      const dt = (t1 - t0) / (n - 1);
+      const ts = arange(t0, t1, n);
+      const xs = [];
+      let x = 0;
+      for (let i = 0; i < n; i++) {
+        x += a * dt;
+        xs.push(x);
+      }
+      return {
+        times: ts,
+        values: xs,
+      };
+    }
 
-  // cribbed from https://plotly.com/javascript/plotlyjs-events/#select-event
-  const color = '#777';
-  const colorLight = '#bbb';
+    prepareAngularRampData({
+      type: "mecanum",
+      leftPowers: [srange(0, 1, 0, -1, 100)],
+      rightPowers: [srange(0, 1, 0, 1, 100)],
+      voltages: srange(0, 1, 0, 12, 100),
+      leftEncPositions: [],
+      rightEncPositions: [],
+      parEncPositions: [constAccelPos(0, 1, 1, 100)],
+      perpEncPositions: [constAccelPos(0, 1, 1, 100)],
+      leftEncVels: [],
+      rightEncVels: [],
+      parEncVels: [constAccelVel(0, 1, 1, 100)],
+      perpEncVels: [constAccelVel(0, 1, 1, 100)],
+      leftEncFixVels: [],
+      rightEncFixVels: [],
+      parEncFixVels: [false],
+      perpEncFixVels: [false],
+      angVels: [srange(0, 1, 0, 0, 100), srange(0, 1, 0, 0, 100), srange(0, 1, 0, 1, 100)],
+    });
 
-  const chartDiv = document.createElement('div');
-  Plotly.newPlot(chartDiv, [{
-    type: 'scatter',
-    mode: 'markers',
-    x: xs,
-    y: ys,
-    name: 'Samples',
-  }], {
-    title: options.title || '',
-    // sets the starting tool from the modebar
-    dragmode: 'zoom',
-    showlegend: false,
-    hovermode: false,
-    width: 600,
-  }, {
-    // 'zoom2d', 'select2d', 'resetScale2d' left
-    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d'],
-  });
+    prepareForwardRampData({
+      type: "mecanum",
+      powers: [srange(0, 1, 0, -1, 100)],
+      voltages: srange(0, 1, 0, 12, 100),
+      forwardEncPositions: [constAccelPos(0, 1, 1, 100)],
+      forwardEncVels: [constAccelVel(0, 1, 1, 100)],
+      forwardEncFixVels: [false],
+    });
 
-  container.appendChild(chartDiv);
-}
+    prepareLateralRampData({
+      type: "mecanum",
+      frontLeftPower: srange(0, 1, 0, -1, 100),
+      backLeftPower: srange(0, 1, 0, -1, 100),
+      frontRightPower: srange(0, 1, 0, 1, 100),
+      backRightPower: srange(0, 1, 0, 1, 100),
+      voltages: srange(0, 1, 0, 12, 100),
+      perpEncPositions: [constAccelPos(0, 1, 1, 100)],
+      perpEncVels: [constAccelVel(0, 1, 1, 100)],
+      perpEncFixVels: [false],
+    });
+  </script>
+</head>
 
-window.addEventListener("DOMContentLoaded", function() {
-  const params = new URLSearchParams(window.location.search);
-  const online = params.get('online') === 'true';
+<body>
+  <div class="content"></div>
+</body>
 
-  fetch(`/tuning/test/${params.get('file')}.csv`)
-    .then(res => res.text())
-    .then(text => {
-      const lines = text.split('\n');
-      const data = lines
-        .slice(1, lines.length - 1)
-        .map(line => line.split(',').map(x => parseFloat(x)))
-      
-      const xs = data.map(xs => xs[0]);
-      const vs = data.map(xs => xs[1]);
-      const ts = data.map(xs => xs[2]);
-
-      const container = document.getElementById('content');
-      newChart(container, ts, vs, {title: 'Raw Velocity Over Time'});
-
-      const tsNew = (online ? ts.slice(1) : ts.slice(1, ts.length - 1));
-      const dxdts = (online ? numDerivOnline : numDerivOffline)(ts, xs);
-      newChart(
-        container, 
-        tsNew,
-        dxdts, 
-        {title: `${online ? 'Online' : 'Offline'} Position Derivative Over Time`}
-      );
-
-      const vsNew = dxdts.map((est, i) => inverseOverflow(vs[i + 1], est));
-      newChart(
-        container, 
-        tsNew,
-        vsNew, 
-        {title: 'Corrected Velocity Over Time'}
-      );
-    })
-    .catch(console.log.bind(console));
-});
-
-    </script>
-  </head>
-  <body>
-    <div id="content">
-      <h1>RR Tests</h1>
-      <p></p>
-    </div>
-  </body>
 </html>

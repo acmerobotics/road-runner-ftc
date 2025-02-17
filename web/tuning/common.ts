@@ -292,26 +292,22 @@ type AngularRampData = {
   rightEncVels: Signal[];
   parEncVels: Signal[];
   perpEncVels: Signal[];
-  angVels: [Signal, Signal, Signal];
+  angVels: Signal[]; // length 3
 };
-
-// This only applies to Pinpoint encoders for now
-function populateMissingVelocities(pss: Signal[], vss: Signal[]) {
-  vss.forEach((vs, i) => {
-    if (vs.values.length === 0) {
-      const ps = pss[i];
-      vs.times = ps.times;
-      vs.values = numDerivOffline(ps.values, ps.times);
-    }
-  });
-}
+type InputAngularRampData = AngularRampData & {
+  // default to true
+  leftEncFixVels: boolean[] | undefined;
+  rightEncFixVels: boolean[] | undefined;
+  parEncFixVels: boolean[] | undefined;
+  perpEncFixVels: boolean[] | undefined;
+};
 
 // We skip the last measurement because it may be corrupted. Perhaps an artifact of
 // poisoned Lynx modules?
 
 function getPosZAngVelocity(data: AngularRampData) {
   const p = data.angVels.reduce<[number, number, boolean, number[]]>((acc, vsArg, axisIdx) => {
-    const vs = vsArg.values.slice(0, -1);
+    const vs = vsArg.values;
     const maxV = vs.reduce((acc, v) => Math.max(acc, v), 0);
     const minV = vs.reduce((acc, v) => Math.max(acc, v), 0);
     const [accMaxV, _axisIdx, _axisRev, _] = acc;
@@ -332,44 +328,119 @@ function getPosZAngVelocity(data: AngularRampData) {
   return p[3];
 }
 
-// TODO: should this be tied to particular IDs?
-export async function loadDeadWheelAngularRampRegression(data: AngularRampData): Promise<string[]> {
-  const angVels = getPosZAngVelocity(data);
+function sliceSignal(s: Signal, start: number, end: number): Signal {
+  return {
+    times: s.times.slice(start, end),
+    values: s.values.slice(start, end),
+  };
+}
 
-  populateMissingVelocities(data.parEncPositions, data.parEncVels);
-  populateMissingVelocities(data.perpEncPositions, data.perpEncVels);
+function sliceSignals(xs: Signal[], start: number, end: number): Signal[] {
+  return xs.map(s => sliceSignal(s, start, end));
+}
+
+// drops the first sample and the last two samples
+function prepareEncSignals(pss: Signal[], vss: Signal[], fs: boolean[]): [Signal[], Signal[]] {
+  const newPss = [];
+  const newVss = [];
+  for (let i = 0; i < pss.length; i++) {
+    const ps = sliceSignal(pss[i], 0, -1);
+    const vs = sliceSignal(vss[i], 0, -1);
+    const newPs = sliceSignal(ps, 1, -1);
+    newPss.push(newPs);
+    if (vs.times.length === 0) {
+      newVss.push({
+        times: newPs.times,
+        values: numDerivOffline(ps.times, ps.values),
+      });
+    } else if (fs[i]) {
+      newVss.push({
+        times: newPs.times,
+        values: fixVels(vs.times, ps.values, vs.values),
+      });
+    } else {
+      newVss.push(sliceSignal(vs, 1, -1));
+    }
+  }
+  return [newPss, newVss];
+}
+
+export function prepareAngularRampData(inputData: InputAngularRampData): AngularRampData {
+  const leftEncFixVels = inputData.leftEncFixVels ?? inputData.leftEncPositions.map(() => true);
+  const rightEncFixVels = inputData.rightEncFixVels ?? inputData.rightEncPositions.map(() => true);
+  const parEncFixVels = inputData.parEncFixVels ?? inputData.parEncPositions.map(() => true);
+  const perpEncFixVels = inputData.perpEncFixVels ?? inputData.perpEncPositions.map(() => true);
+
+  const [leftEncPositions, leftEncVels] = prepareEncSignals(inputData.leftEncPositions, inputData.leftEncVels, leftEncFixVels);
+  const [rightEncPositions, rightEncVels] = prepareEncSignals(inputData.rightEncPositions, inputData.rightEncVels, rightEncFixVels);
+  const [parEncPositions, parEncVels] = prepareEncSignals(inputData.parEncPositions, inputData.parEncVels, parEncFixVels);
+  const [perpEncPositions, perpEncVels] = prepareEncSignals(inputData.perpEncPositions, inputData.perpEncVels, perpEncFixVels);
+
+  const data: AngularRampData = {
+    type: inputData.type,
+    leftPowers: sliceSignals(inputData.leftPowers, 1, -2),
+    rightPowers: sliceSignals(inputData.rightPowers, 1, -2),
+    voltages: sliceSignal(inputData.voltages, 1, -2),
+    leftEncPositions,
+    leftEncVels,
+    rightEncPositions,
+    rightEncVels,
+    parEncPositions,
+    parEncVels,
+    perpEncPositions,
+    perpEncVels,
+    angVels: sliceSignals(inputData.angVels, 1, -2),
+  };
+
+  const lengths = [
+    ...data.leftPowers.map(ps => ps.values.length),
+    ...data.rightPowers.map(ps => ps.values.length),
+    data.voltages.values.length,
+    ...data.leftEncPositions.map(ps => ps.values.length),
+    ...data.rightEncPositions.map(ps => ps.values.length),
+    ...data.parEncPositions.map(ps => ps.values.length),
+    ...data.perpEncPositions.map(ps => ps.values.length),
+    ...data.leftEncVels.map(ps => ps.values.length),
+    ...data.rightEncVels.map(ps => ps.values.length),
+    ...data.parEncVels.map(ps => ps.values.length),
+    ...data.perpEncVels.map(ps => ps.values.length),
+    ...data.angVels.map(ps => ps.values.length),
+  ];
+  if (lengths.some(l => l !== lengths[0])) {
+    throw new Error(`Lengths do not match: ${lengths.join(', ')}`);
+  }
+
+  return data;
+}
+
+// TODO: should this be tied to particular IDs?
+export async function loadDeadWheelAngularRampRegression(inputData: InputAngularRampData): Promise<string[]> {
+  const data = prepareAngularRampData(inputData);
+  const angVels = getPosZAngVelocity(data);
 
   const deadWheelCharts = document.getElementById('deadWheelCharts')!;
   data.parEncVels.forEach((vs, i) => {
-    const ps = data.parEncPositions[i];
     const div = document.createElement('div');
-    newLinearRegressionChart(div,
-      angVels.slice(1, -1),
-      fixVels(
-        vs.times.slice(0, -1),
-        ps.values.slice(0, -1),
-        vs.values.slice(0, -1)
-      ),
-      { title: `Parallel Wheel ${i} Regression`, slope: 'y-position', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' });
+    newLinearRegressionChart(div, angVels, vs.values,
+      {
+        title: `Parallel Wheel ${i} Regression`, slope: 'y-position',
+        xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]'
+      });
     deadWheelCharts.appendChild(div);
   });
   data.perpEncVels.forEach((vs, i) => {
-    const ps = data.perpEncPositions[i]
     const div = document.createElement('div');
-    newLinearRegressionChart(div,
-      angVels.slice(1, -1),
-      fixVels(
-        vs.times.slice(0, -1),
-        ps.values.slice(0, -1),
-        vs.values.slice(0, -1)
-      ),
-      { title: `Perpendicular Wheel ${i} Regression`, slope: 'x-position', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' });
+    newLinearRegressionChart(div, angVels, vs.values,
+      {
+        title: `Perpendicular Wheel ${i} Regression`, slope: 'x-position',
+        xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]'
+      });
     deadWheelCharts.appendChild(div);
   });
 
   const setParams = await (async () => {
     const allPowers = [...data.leftPowers, ...data.rightPowers];
-    const appliedVoltages = data.voltages.values.slice(0, -1).map((v, i) =>
+    const appliedVoltages = data.voltages.values.map((v, i) =>
       allPowers.reduce((acc, ps) => Math.max(acc, ps.values[i]), 0) * v);
 
     const setTrackWidthData = await newLinearRegressionChart(
@@ -393,29 +464,27 @@ export async function loadDeadWheelAngularRampRegression(data: AngularRampData):
   return [];
 }
 
-export async function loadDriveEncoderAngularRampRegression(data: AngularRampData): Promise<string[]> {
-  const leftEncVels = data.leftEncVels.map((vs, i) =>
-    fixVels(vs.times.slice(0, -1), data.leftEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
-  const rightEncVels = data.rightEncVels.map((vs, i) =>
-    fixVels(vs.times.slice(0, -1), data.rightEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
+export async function loadDriveEncoderAngularRampRegression(inputData: InputAngularRampData): Promise<string[]> {
+  const data = prepareAngularRampData(inputData);
 
   await newLinearRegressionChart(
     document.getElementById('rampChart')!,
     [
-      ...leftEncVels.flatMap(vs => vs.map(v => -v)),
-      ...rightEncVels.flatMap(vs => vs),
+      ...data.leftEncVels.flatMap(vs => vs.values.map(v => -v)),
+      ...data.rightEncVels.flatMap(vs => vs.values),
     ],
     [
       ...data.leftPowers.flatMap(ps => {
-        const psNew = ps.values.slice(0, -1).map((p, i) => -p * data.voltages.values[i]);
-        return psNew.slice(1, -1);
+        return ps.values.map((p, i) => -p * data.voltages.values[i]);
       }),
       ...data.rightPowers.flatMap(ps => {
-        const psNew = ps.values.slice(0, -1).map((p, i) => p * data.voltages.values[i]);
-        return psNew.slice(1, -1);
+        return ps.values.map((p, i) => p * data.voltages.values[i]);
       }),
     ],
-    { title: 'Angular Ramp Regression', slope: 'kV', intercept: 'kS', xLabel: 'wheel velocity [ticks/s]', yLabel: 'applied voltage [V]' },
+    {
+      title: 'Feedforward Regression', slope: 'kV', intercept: 'kS',
+      xLabel: 'wheel velocity [ticks/s]', yLabel: 'applied voltage [V]'
+    },
   );
 
   const angVels = getPosZAngVelocity(data).slice(1, -1);
@@ -424,8 +493,8 @@ export async function loadDriveEncoderAngularRampRegression(data: AngularRampDat
     document.getElementById('trackWidthChart')!,
     angVels,
     angVels.map((_, i) =>
-      (leftEncVels.reduce((acc, vs) => acc - vs[i], 0) / data.leftEncVels.length
-        + rightEncVels.reduce((acc, vs) => acc + vs[i], 0) / data.rightEncVels.length)
+      (data.leftEncVels.reduce((acc, vs) => acc - vs.values[i], 0) / data.leftEncVels.length
+        + data.rightEncVels.reduce((acc, vs) => acc + vs.values[i], 0) / data.rightEncVels.length)
       * (data.type === 'mecanum' ? 0.5 : 1)
     ),
     { title: 'Track Width Regression', slope: 'track width', xLabel: 'angular velocity [rad/s]', yLabel: 'wheel velocity [ticks/s]' },
@@ -441,22 +510,45 @@ type ForwardRampData = {
   forwardEncPositions: Signal[];
   forwardEncVels: Signal[];
 };
+type InputForwardRampData = ForwardRampData & {
+  forwardEncFixVels: boolean[] | undefined;
+};
 
-export async function loadForwardRampRegression(data: ForwardRampData): Promise<string[]> {
-  populateMissingVelocities(data.forwardEncPositions, data.forwardEncVels);
+export function prepareForwardRampData(inputData: InputForwardRampData): ForwardRampData {
+  const forwardEncFixVels = inputData.forwardEncFixVels ?? inputData.forwardEncVels.map(() => true);
+  const [forwardEncPositions, forwardEncVels] = prepareEncSignals(inputData.forwardEncPositions, inputData.forwardEncVels, forwardEncFixVels);
 
-  const forwardEncVels = data.forwardEncVels.flatMap((vs, i) =>
-    fixVels(vs.times.slice(0, -1), data.forwardEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
-  const appliedVoltages = data.forwardEncVels.flatMap(() => {
-    const voltages = data.voltages.values.slice(0, -1).map((v, i) =>
-      data.powers.reduce((acc, ps) => Math.max(acc, ps.values[i]), 0) * v);
+  const data: ForwardRampData = {
+    type: inputData.type,
+    powers: sliceSignals(inputData.powers, 1, -2),
+    voltages: sliceSignal(inputData.voltages, 1, -2),
+    forwardEncPositions,
+    forwardEncVels,
+  };
 
-    return voltages.slice(1, voltages.length - 1);
-  });
+  const lengths = [
+    ...data.powers.map(ps => ps.values.length),
+    data.voltages.values.length,
+    ...data.forwardEncPositions.map(ps => ps.values.length),
+    ...data.forwardEncVels.map(vs => vs.values.length),
+  ]
+  if (lengths.some(l => l !== lengths[0])) {
+    throw new Error(`Lengths do not match: ${lengths.join(', ')}`);
+  }
+
+  return data;
+}
+
+export async function loadForwardRampRegression(inputData: InputForwardRampData): Promise<string[]> {
+  const data = prepareForwardRampData(inputData);
+
+  const appliedVoltages = data.forwardEncVels.flatMap(() =>
+    data.voltages.values.map((v, i) =>
+      data.powers.reduce((acc, ps) => Math.max(acc, ps.values[i]), 0) * v));
 
   await newLinearRegressionChart(
     document.getElementById('rampChart')!,
-    forwardEncVels, appliedVoltages,
+    data.forwardEncVels.flatMap(v => v.values), appliedVoltages,
     { title: 'Forward Ramp Regression', slope: 'kV', intercept: 'kS', xLabel: 'forward velocity [ticks/s]', yLabel: 'applied voltage [V]' },
   );
 
@@ -473,14 +565,46 @@ type LateralRampData = {
   perpEncPositions: Signal[];
   perpEncVels: Signal[];
 };
+type InputLateralRampData = LateralRampData & {
+  perpEncFixVels: boolean[] | undefined;
+};
 
-export async function loadLateralRampRegression(data: LateralRampData): Promise<string[]> {
-  populateMissingVelocities(data.perpEncPositions, data.perpEncVels);
+export function prepareLateralRampData(inputData: InputLateralRampData): LateralRampData {
+  const perpEncFixVels = inputData.perpEncFixVels ?? inputData.perpEncVels.map(() => true);
+  const [perpEncPositions, perpEncVels] = prepareEncSignals(inputData.perpEncPositions, inputData.perpEncVels, perpEncFixVels);
 
-  const perpEncVels = data.perpEncVels.flatMap((vs, i) =>
-    fixVels(vs.times.slice(0, -1), data.perpEncPositions[i].values.slice(0, -1), vs.values.slice(0, -1)));
-  const appliedVoltages = data.perpEncVels.flatMap(() => {
-    const voltages = data.voltages.values.slice(0, -1).map((v, i) =>
+  const data: LateralRampData = {
+    type: inputData.type,
+    frontLeftPower: sliceSignal(inputData.frontLeftPower, 1, -2),
+    backLeftPower: sliceSignal(inputData.backLeftPower, 1, -2),
+    frontRightPower: sliceSignal(inputData.frontRightPower, 1, -2),
+    backRightPower: sliceSignal(inputData.backRightPower, 1, -2),
+    voltages: sliceSignal(inputData.voltages, 1, -2),
+    perpEncPositions: perpEncPositions,
+    perpEncVels: perpEncVels,
+  };
+
+  const lengths = [
+    data.frontLeftPower.values.length,
+    data.backLeftPower.values.length,
+    data.frontRightPower.values.length,
+    data.backRightPower.values.length,
+    data.voltages.values.length,
+    ...perpEncPositions.map(p => p.values.length),
+    ...perpEncVels.map(v => v.values.length),
+  ];
+  if (lengths.some(l => l !== lengths[0])) {
+    throw new Error(`Lengths do not match: ${lengths.join(', ')}`);
+  }
+
+  return data;
+}
+
+export async function loadLateralRampRegression(inputData: InputLateralRampData): Promise<string[]> {
+  const data = prepareLateralRampData(inputData);
+
+  const appliedVoltages = data.perpEncVels.flatMap(() =>
+    data.voltages.values.map((v, i) =>
       // TODO: Why use max here over a sum? The times are all off anyway.
       Math.max(
         -data.frontLeftPower.values[i],
@@ -488,10 +612,8 @@ export async function loadLateralRampRegression(data: LateralRampData): Promise<
         data.frontRightPower.values[i],
         -data.backRightPower.values[i],
         0,
-      ) * v);
-
-    return voltages.slice(1, voltages.length - 1);
-  });
+      ) * v));
+  const allPerpEncVels = data.perpEncVels.flatMap(v => v.values);
 
   const setParams = await (async () => {
     const setData = await newLinearRegressionChart(
@@ -502,7 +624,7 @@ export async function loadLateralRampRegression(data: LateralRampData): Promise<
 
     return (inPerTick: number, kV: number, kS: number) => {
       const expectedPerpVelTicks = appliedVoltages.map(voltage => (voltage - kS) / kV);
-      const perpEncVelsInches = perpEncVels.map(v => v * inPerTick);
+      const perpEncVelsInches = allPerpEncVels.map(v => v * inPerTick);
       setData(expectedPerpVelTicks, perpEncVelsInches);
     };
   })();
@@ -516,8 +638,8 @@ export async function loadLateralRampRegression(data: LateralRampData): Promise<
 
   setParams(parseFloat(inPerTickInput.value), parseFloat(kvInput.value), parseFloat(ksInput.value));
 
-  const minVel = perpEncVels.reduce((acc, v) => Math.min(acc, v), 0);
-  const maxAbsVel = perpEncVels.reduce((acc, v) => Math.max(acc, Math.abs(v)), 0);
+  const minVel = allPerpEncVels.reduce((acc, v) => Math.min(acc, v), 0);
+  const maxAbsVel = allPerpEncVels.reduce((acc, v) => Math.max(acc, Math.abs(v)), 0);
   if (-minVel > 0.2 * maxAbsVel) {
     return ['Warning: Lateral velocity should not go negative. Make sure the robot is pushed rightward and the encoders are oriented correctly.'];
   }
