@@ -11,7 +11,7 @@ import kotlin.math.round
 class PositionVelocityPair(
         @JvmField val position: Int, @JvmField val velocity: Int?,
         @JvmField val rawPosition: Int, @JvmField val rawVelocity: Int?
- )
+ ) { constructor(position: Int, velocity: Int?) : this(position, velocity, position, velocity) }
 
 sealed interface Encoder {
     var direction: DcMotorSimple.Direction

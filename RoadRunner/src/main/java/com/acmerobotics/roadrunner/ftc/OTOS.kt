@@ -13,9 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation
 import org.firstinspires.ftc.robotcore.external.navigation.Quaternion
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
 import kotlin.math.round
-
-fun rawPosVelPair(pos: Int, vel: Int) = PositionVelocityPair(pos, vel, pos, vel)
-fun rawPosVelPair(pos: Double, vel: Double) = rawPosVelPair(round(pos).toInt(), round(vel).toInt())
+import kotlin.math.roundToInt
 
 fun SparkFunOTOS.Pose2D.toRRPose() = Pose2d(x, y, h)
 fun Pose2d.toOTOSPose() = SparkFunOTOS.Pose2D(position.x, position.y, heading.toDouble())
@@ -39,13 +37,13 @@ class OTOSEncoderGroup(val otos: SparkFunOTOS) : EncoderGroup {
 class ParallelOTOSEncoder(val group: OTOSEncoderGroup) : Encoder {
     override var direction = DcMotorSimple.Direction.FORWARD
 
-    override fun getPositionAndVelocity() = rawPosVelPair(group.pos.x, group.vel.x)
+    override fun getPositionAndVelocity() = PositionVelocityPair(group.pos.x.roundToInt(), group.vel.x.roundToInt())
 }
 
 class PerpendicularOTOSEncoder(val group: OTOSEncoderGroup) : Encoder {
     override var direction = DcMotorSimple.Direction.FORWARD
 
-    override fun getPositionAndVelocity() = rawPosVelPair(group.pos.y, group.vel.y)
+    override fun getPositionAndVelocity() = PositionVelocityPair(group.pos.y.roundToInt(), group.vel.y.roundToInt())
 }
 
 class OTOSIMU(val otos: SparkFunOTOS) : LazyImu, IMU, HardwareDevice by otos {

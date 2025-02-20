@@ -16,6 +16,10 @@ interface PinpointView {
 
     fun getParEncoderPosition(): Int
     fun getPerpEncoderPosition(): Int
+
+    fun getParEncoderVelocity(): Int
+    fun getPerpEncoderVelocity(): Int
+
     fun getHeadingVelocity(): Float
 
     fun setParDirection(direction: DcMotorSimple.Direction)
@@ -28,9 +32,7 @@ class PinpointParEncoder(val pinpoint: PinpointView) : Encoder {
             field = value
             pinpoint.setParDirection(value)
         }
-    override fun getPositionAndVelocity() = pinpoint.getParEncoderPosition().let {
-        PositionVelocityPair(it, null, it, null)
-    }
+    override fun getPositionAndVelocity() = PositionVelocityPair(pinpoint.getParEncoderPosition(), pinpoint.getParEncoderVelocity())
 }
 
 class PinpointPerpEncoder(val pinpoint: PinpointView) : Encoder {
@@ -39,9 +41,7 @@ class PinpointPerpEncoder(val pinpoint: PinpointView) : Encoder {
             field = value
             pinpoint.setPerpDirection(value)
         }
-    override fun getPositionAndVelocity() = pinpoint.getPerpEncoderPosition().let {
-        PositionVelocityPair(it, null, it, null)
-    }
+    override fun getPositionAndVelocity() = PositionVelocityPair(pinpoint.getPerpEncoderPosition(), pinpoint.getPerpEncoderVelocity())
 }
 
 class PinpointEncoderGroup(
