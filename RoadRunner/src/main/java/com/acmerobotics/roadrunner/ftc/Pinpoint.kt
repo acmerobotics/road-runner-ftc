@@ -12,36 +12,38 @@ import org.firstinspires.ftc.robotcore.external.navigation.Quaternion
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
 
 interface PinpointView {
+    var parDirection: DcMotorSimple.Direction
+    var perpDirection: DcMotorSimple.Direction
+
     fun update()
 
     fun getParEncoderPosition(): Int
     fun getPerpEncoderPosition(): Int
-    fun getHeadingVelocity(): Float
 
-    fun setParDirection(direction: DcMotorSimple.Direction)
-    fun setPerpDirection(direction: DcMotorSimple.Direction)
+    fun getParEncoderVelocity(): Int
+    fun getPerpEncoderVelocity(): Int
+
+    fun getHeadingVelocity(): Float
 }
 
 class PinpointParEncoder(val pinpoint: PinpointView) : Encoder {
-    override var direction = DcMotorSimple.Direction.FORWARD
+    override var direction = pinpoint.parDirection
         set(value) {
             field = value
-            pinpoint.setParDirection(value)
+            pinpoint.parDirection = value
         }
-    override fun getPositionAndVelocity() = pinpoint.getParEncoderPosition().let {
-        PositionVelocityPair(it, null, it, null)
-    }
+
+    override fun getPositionAndVelocity() = PositionVelocityPair(pinpoint.getParEncoderPosition(), pinpoint.getParEncoderVelocity())
 }
 
 class PinpointPerpEncoder(val pinpoint: PinpointView) : Encoder {
-    override var direction = DcMotorSimple.Direction.FORWARD
+    override var direction = pinpoint.perpDirection
         set(value) {
             field = value
-            pinpoint.setPerpDirection(value)
+            pinpoint.perpDirection = value
         }
-    override fun getPositionAndVelocity() = pinpoint.getPerpEncoderPosition().let {
-        PositionVelocityPair(it, null, it, null)
-    }
+
+    override fun getPositionAndVelocity() = PositionVelocityPair(pinpoint.getPerpEncoderPosition(), pinpoint.getPerpEncoderVelocity())
 }
 
 class PinpointEncoderGroup(
