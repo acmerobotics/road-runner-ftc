@@ -178,10 +178,8 @@ private fun recordUnwrappedEncoderData(gs: List<EncoderGroup>, ts: List<Double>,
     ps.times.add(t)
     ps.values.add(pv.position.toDouble())
 
-    if (pv.velocity != null) {
-        vs.times.add(t)
-        vs.values.add(pv.velocity.toDouble())
-    }
+    vs.times.add(t)
+    vs.values.add(pv.velocity.toDouble())
 }
 
 class AngularRampLogger(val dvf: DriveViewFactory) : LinearOpMode() {
