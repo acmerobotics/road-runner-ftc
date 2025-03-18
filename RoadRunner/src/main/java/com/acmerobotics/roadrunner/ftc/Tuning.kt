@@ -740,12 +740,19 @@ class DeadWheelDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() {
     }
 }
 
+const val OTOS_ERROR_MSG =
+    """
+    Only run this OpMode if you are using a Sparkfun OTOS.
+    This OpMode requires OTOS to be properly configured. 
+    See Tuning docs for details.
+    """
+
 /* Originally written by j5155; ported to Kotlin by zach.waffle */
 class OTOSAngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
-        require(view.imu is OTOSIMU) { "make sure to set the IMU to an OTOSIMU" }
+        require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
 
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
@@ -773,7 +780,7 @@ class OTOSLinearScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
-        require(view.encoderGroups.first() is OTOSEncoderGroup)
+        require(view.encoderGroups.first() is OTOSEncoderGroup) { OTOS_ERROR_MSG }
 
         val parallelEnc = view.encoderGroups.first().encoders.first()
         val perpEnc = view.encoderGroups.first().encoders.last()
@@ -803,7 +810,7 @@ class OTOSHeadingOffsetTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
-        require(view.encoderGroups.first() is OTOSEncoderGroup)
+        require(view.encoderGroups.first() is OTOSEncoderGroup) { OTOS_ERROR_MSG }
 
         val parallelEnc = view.encoderGroups.first().encoders.first()
         val perpEnc = view.encoderGroups.first().encoders.last()
@@ -833,8 +840,8 @@ class OTOSPositionOffsetTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
-        require(view.imu is OTOSIMU) { "make sure to set the IMU to an OTOSIMU" }
-        require(view.encoderGroups.first() is OTOSEncoderGroup)
+        require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
+        require(view.encoderGroups.first() is OTOSEncoderGroup) { OTOS_ERROR_MSG }
 
         val parallelEnc = view.encoderGroups.first().encoders.first()
         val perpEnc = view.encoderGroups.first().encoders.last()
