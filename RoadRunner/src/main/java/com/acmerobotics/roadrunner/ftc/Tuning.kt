@@ -773,6 +773,7 @@ class AngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
             heading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
             radsTurned += (heading - lastHeading)
+            lastHeading = heading
 
             view.setDrivePowers(
                 PoseVelocity2d(
