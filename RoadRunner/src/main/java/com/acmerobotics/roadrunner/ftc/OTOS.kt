@@ -54,7 +54,7 @@ class OTOSIMU(val otos: SparkFunOTOS) : LazyImu, IMU, HardwareDevice by otos {
     override fun resetYaw() = fail()
 
     override fun getRobotYawPitchRollAngles(): YawPitchRollAngles {
-        return YawPitchRollAngles(AngleUnit.RADIANS, otos.position.h, 0.0, 0.0, 0L)
+        return YawPitchRollAngles(otos.angularUnit, normalizeAngle(otos.position.h), 0.0, 0.0, 0L)
     }
 
     override fun getRobotOrientation(

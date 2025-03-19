@@ -754,19 +754,21 @@ class OTOSAngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
 
         require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
 
+        val imu = view.imu.get()
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         var radsTurned = 0.0
-        var lastHeading = 0.0
+        var lastHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
         telemetry.addLine("OTOS Angular Scalar Tuner")
         telemetry.addLine("Press START, then rotate the robot on the ground 10 times (3600 degrees).")
         telemetry.update()
         waitForStart()
         while (opModeIsActive()) {
-            val otosHeading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+            val otosHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
             radsTurned += (otosHeading - lastHeading)
+            lastHeading = otosHeading
 
             telemetry.addData("OTOS Heading (radians)", otosHeading)
             telemetry.addData("Uncorrected Degrees Turned", Math.toDegrees(radsTurned))
