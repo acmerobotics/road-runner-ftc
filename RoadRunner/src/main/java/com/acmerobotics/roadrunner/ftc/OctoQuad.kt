@@ -18,6 +18,7 @@ interface OctoQuadView {
     fun getPerpEncoderPosition(): Int
     fun getParEncoderVelocity(): Int
     fun getPerpEncoderVelocity(): Int
+    fun getHeading(): Float
     fun getHeadingVelocity(): Float
 
     fun setParDirection(direction: DcMotorSimple.Direction)
@@ -74,7 +75,8 @@ class OctoQuadIMU(val octoquad: OctoQuadView): IMU, LazyImu {
     }
 
     override fun getRobotYawPitchRollAngles(): YawPitchRollAngles {
-        throw NotImplementedError()
+        octoquad.update()
+        return YawPitchRollAngles(AngleUnit.RADIANS, octoquad.getHeading().toDouble(), 0.0, 0.0, 0L)
     }
 
     override fun getRobotOrientation(

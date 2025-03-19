@@ -748,7 +748,7 @@ const val OTOS_ERROR_MSG =
     """
 
 /* Originally written by j5155; ported to Kotlin by zach.waffle */
-class OTOSAngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
+class AngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
@@ -757,18 +757,36 @@ class OTOSAngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         var radsTurned = 0.0
-        var lastHeading = 0.0
 
-        telemetry.addLine("OTOS Angular Scalar Tuner")
+        view.motors.forEach { it.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT }
+
+
+        telemetry.addLine("Angular Scalar Tuner")
         telemetry.addLine("Press START, then rotate the robot on the ground 10 times (3600 degrees).")
         telemetry.update()
         waitForStart()
+
+        var heading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+        var lastHeading = heading
+
         while (opModeIsActive()) {
-            val otosHeading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+            heading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
-            radsTurned += (otosHeading - lastHeading)
+            radsTurned += (heading - lastHeading)
 
-            telemetry.addData("OTOS Heading (radians)", otosHeading)
+            view.setDrivePowers(
+                PoseVelocity2d(
+                    Vector2d(
+                        -gamepad1.left_stick_y.toDouble(),
+                        -gamepad1.left_stick_x.toDouble()
+                    ),
+                    -gamepad1.right_stick_x.toDouble()
+                )
+            )
+
+            telemetry.addLine("Rotate the robot on the ground 10 times (3600 degrees)")
+            telemetry.addLine("You can drive the robot with gamepad1")
+            telemetry.addData("Heading (radians)", heading)
             telemetry.addData("Uncorrected Degrees Turned", Math.toDegrees(radsTurned))
             telemetry.addData("Calculated Angular Scalar", 3600 / Math.toDegrees(radsTurned))
             telemetry.update()
