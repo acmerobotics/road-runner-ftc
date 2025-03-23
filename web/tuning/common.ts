@@ -1,4 +1,4 @@
-import Plotly from 'plotly.js-dist-min';
+import Plotly from 'plotly.js-basic-dist-min';
 import regression, { DataPoint } from 'regression';
 
 // TODO: time-interpolate data
