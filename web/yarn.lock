@@ -179,10 +179,10 @@ picocolors@^1.0.0:
   resolved "https://registry.yarnpkg.com/picocolors/-/picocolors-1.0.0.tgz#cb5bdc74ff3f51892236eaf79d68bc44564ab81c"
   integrity sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==
 
-plotly.js-dist-min@2.3.1:
+plotly.js-basic-dist-min@2.3.1:
   version "2.3.1"
-  resolved "https://registry.yarnpkg.com/plotly.js-dist-min/-/plotly.js-dist-min-2.3.1.tgz#b8ddd7ddd3abf4ec06b7686d493d07c564de2241"
-  integrity sha512-Y5srb2izG/TO3KcWb2soAL6IP5/KZ3VS+hIr8skUgCVqtAK9CYzxjNS1fIzn4Y6OdcxoK3dbjqqPjmESOQga2g==
+  resolved "https://registry.yarnpkg.com/plotly.js-basic-dist-min/-/plotly.js-basic-dist-min-2.3.1.tgz#76b27c5fe6096a2831f164bf4c5b85d59e7774c8"
+  integrity sha512-HkCGj2bisy4KrXA5NhdkVWpEZUejIRrLKhOfraWBYUbRzGJEoCq/9fIUS5oEYLVN8dT3qYkULAsa9Umjzeg/Ww==
 
 postcss@^8.4.27:
   version "8.4.28"
