@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.MecanumKinematics
 import com.acmerobotics.roadrunner.MotorFeedforward
 import com.acmerobotics.roadrunner.PoseVelocity2d
 import com.acmerobotics.roadrunner.PoseVelocity2dDual
+import com.acmerobotics.roadrunner.Rotation2d
 import com.acmerobotics.roadrunner.TankKinematics
 import com.acmerobotics.roadrunner.Time
 import com.acmerobotics.roadrunner.TimeProfile
@@ -767,7 +768,7 @@ class OTOSAngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
         while (opModeIsActive()) {
             val otosHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
-            radsTurned += (otosHeading - lastHeading)
+            radsTurned += (Rotation2d.exp(otosHeading) - Rotation2d.exp(lastHeading))
             lastHeading = otosHeading
 
             telemetry.addData("OTOS Heading (radians)", otosHeading)
