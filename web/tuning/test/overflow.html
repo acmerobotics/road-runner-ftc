@@ -26,7 +26,7 @@ fieldset {
     </style>
 
     <script type="module">
-import Plotly from "plotly.js-dist-min";
+import Plotly from "plotly.js-basic-dist-min";
 import {numDerivOffline, numDerivOnline, inverseOverflow} from '../common.ts';
 
 function newChart(container, xs, ys, options) {
@@ -71,7 +71,7 @@ window.addEventListener("DOMContentLoaded", function() {
       const data = lines
         .slice(1, lines.length - 1)
         .map(line => line.split(',').map(x => parseFloat(x)))
-      
+
       const xs = data.map(xs => xs[0]);
       const vs = data.map(xs => xs[1]);
       const ts = data.map(xs => xs[2]);
@@ -82,17 +82,17 @@ window.addEventListener("DOMContentLoaded", function() {
       const tsNew = (online ? ts.slice(1) : ts.slice(1, ts.length - 1));
       const dxdts = (online ? numDerivOnline : numDerivOffline)(ts, xs);
       newChart(
-        container, 
+        container,
         tsNew,
-        dxdts, 
+        dxdts,
         {title: `${online ? 'Online' : 'Offline'} Position Derivative Over Time`}
       );
 
       const vsNew = dxdts.map((est, i) => inverseOverflow(vs[i + 1], est));
       newChart(
-        container, 
+        container,
         tsNew,
-        vsNew, 
+        vsNew,
         {title: 'Corrected Velocity Over Time'}
       );
     })

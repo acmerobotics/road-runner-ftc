@@ -11,7 +11,7 @@
     "vite": "^4.4.9"
   },
   "dependencies": {
-    "plotly.js-dist-min": "2.3.1",
+    "plotly.js-basic-dist-min": "2.3.1",
     "regression": "^2.0.1"
   }
 }
