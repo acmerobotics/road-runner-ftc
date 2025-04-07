@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.MecanumKinematics
 import com.acmerobotics.roadrunner.MotorFeedforward
 import com.acmerobotics.roadrunner.PoseVelocity2d
 import com.acmerobotics.roadrunner.PoseVelocity2dDual
+import com.acmerobotics.roadrunner.Rotation2d
 import com.acmerobotics.roadrunner.TankKinematics
 import com.acmerobotics.roadrunner.Time
 import com.acmerobotics.roadrunner.TimeProfile
@@ -754,25 +755,23 @@ class AngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
 
         require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
 
+        val imu = view.imu.get()
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         var radsTurned = 0.0
 
         view.motors.forEach { it.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT }
+        var lastHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
 
         telemetry.addLine("Angular Scalar Tuner")
         telemetry.addLine("Press START, then rotate the robot on the ground 10 times (3600 degrees).")
         telemetry.update()
         waitForStart()
-
-        var heading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
-        var lastHeading = heading
-
         while (opModeIsActive()) {
-            heading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+            val heading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
-            radsTurned += (heading - lastHeading)
+            radsTurned += (Rotation2d.exp(otosHeading) - Rotation2d.exp(lastHeading))
             lastHeading = heading
 
             view.setDrivePowers(

@@ -5,6 +5,9 @@ import com.qualcomm.robotcore.hardware.IMU
 import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot
 import com.qualcomm.robotcore.util.ElapsedTime
 import com.qualcomm.robotcore.util.RobotLog
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 class ImuInitMessage(
         @JvmField
@@ -20,6 +23,8 @@ class ImuInitMessage(
 interface LazyImu {
     fun get(): IMU
 }
+
+fun normalizeAngle(angle: Double) = atan2(sin(angle), cos(angle))
 
 class LazyHardwareMapImu @JvmOverloads constructor(
         private val hardwareMap: HardwareMap,
