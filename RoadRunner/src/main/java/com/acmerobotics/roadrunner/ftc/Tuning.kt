@@ -21,8 +21,12 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.VoltageSensor
 import com.qualcomm.robotcore.util.ElapsedTime
+import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.gamepad1
+import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap
+import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
+import kotlin.collections.map
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.atan2
@@ -753,7 +757,7 @@ class AngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
-        require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
+        require(view.imu is OTOSIMU || view.imu is OctoQuadIMU) { " Only OctoQuad and Sparkfun OTOS require angular scalar to be tuned." }
 
         val imu = view.imu.get()
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
