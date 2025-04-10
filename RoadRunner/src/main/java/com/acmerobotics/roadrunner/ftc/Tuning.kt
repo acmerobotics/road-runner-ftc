@@ -14,19 +14,14 @@ import com.acmerobotics.roadrunner.Vector2d
 import com.acmerobotics.roadrunner.constantProfile
 import com.google.gson.annotations.SerializedName
 import com.qualcomm.hardware.lynx.LynxModule
-import com.qualcomm.hardware.sparkfun.SparkFunOTOS
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.HardwareMap
 import com.qualcomm.robotcore.hardware.VoltageSensor
 import com.qualcomm.robotcore.util.ElapsedTime
-import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.gamepad1
-import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap
-import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
-import kotlin.collections.map
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.atan2
@@ -775,7 +770,7 @@ class AngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
         while (opModeIsActive()) {
             val heading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
-            radsTurned += (Rotation2d.exp(otosHeading) - Rotation2d.exp(lastHeading))
+            radsTurned += (Rotation2d.exp(heading) - Rotation2d.exp(lastHeading))
             lastHeading = heading
 
             view.setDrivePowers(
