@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.MecanumKinematics
 import com.acmerobotics.roadrunner.MotorFeedforward
 import com.acmerobotics.roadrunner.PoseVelocity2d
 import com.acmerobotics.roadrunner.PoseVelocity2dDual
+import com.acmerobotics.roadrunner.Rotation2d
 import com.acmerobotics.roadrunner.TankKinematics
 import com.acmerobotics.roadrunner.Time
 import com.acmerobotics.roadrunner.TimeProfile
@@ -740,19 +741,36 @@ class DeadWheelDirectionDebugger(val dvf: DriveViewFactory) : LinearOpMode() {
     }
 }
 
+const val OTOS_ERROR_MSG =
+    """
+    Only run this OpMode if you are using a Sparkfun OTOS.
+    This OpMode requires OTOS to be properly configured. 
+    See Tuning docs for details.
+    """
+
 /* Originally written by j5155; ported to Kotlin by zach.waffle */
-class OTOSAngularScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+class OTOSAngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
+        val view = dvf.make(hardwareMap)
+
+        require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
+
+        val imu = view.imu.get()
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         var radsTurned = 0.0
+        var lastHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+
         telemetry.addLine("OTOS Angular Scalar Tuner")
         telemetry.addLine("Press START, then rotate the robot on the ground 10 times (3600 degrees).")
         telemetry.update()
         waitForStart()
         while (opModeIsActive()) {
-            val otosHeading = otos.position.h
-            radsTurned += otosHeading
+            val otosHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+
+            radsTurned += (Rotation2d.exp(otosHeading) - Rotation2d.exp(lastHeading))
+            lastHeading = otosHeading
+
             telemetry.addData("OTOS Heading (radians)", otosHeading)
             telemetry.addData("Uncorrected Degrees Turned", Math.toDegrees(radsTurned))
             telemetry.addData("Calculated Angular Scalar", 3600 / Math.toDegrees(radsTurned))
@@ -761,8 +779,15 @@ class OTOSAngularScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
     }
 }
 
-class OTOSLinearScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+class OTOSLinearScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
+        val view = dvf.make(hardwareMap)
+
+        require(view.encoderGroups.first() is OTOSEncoderGroup) { OTOS_ERROR_MSG }
+
+        val parallelEnc = view.encoderGroups.first().encoders.first()
+        val perpEnc = view.encoderGroups.first().encoders.last()
+
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         telemetry.addLine("OTOS Linear Scalar Tuner")
@@ -772,38 +797,58 @@ class OTOSLinearScalarTuner(val otos: SparkFunOTOS) : LinearOpMode() {
         waitForStart()
 
         while (opModeIsActive()) {
-            val pose = otos.position
-            telemetry.addData("Uncorrected Distance Traveled Y", pose.x)
-            telemetry.addData("Uncorrected Distance Traveled X", pose.y)
+            val xPos = parallelEnc.getPositionAndVelocity().position * view.inPerTick
+            val yPos = perpEnc.getPositionAndVelocity().position * view.inPerTick
+
+            telemetry.addData("Uncorrected Distance Traveled Y", xPos)
+            telemetry.addData("Uncorrected Distance Traveled X", yPos)
             telemetry.update()
         }
     }
 }
 
 /* Originally written by j5155; ported to Kotlin by zach.waffle */
-class OTOSHeadingOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+class OTOSHeadingOffsetTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     @Throws(InterruptedException::class)
     override fun runOpMode() {
+        val view = dvf.make(hardwareMap)
+
+        require(view.encoderGroups.first() is OTOSEncoderGroup) { OTOS_ERROR_MSG }
+
+        val parallelEnc = view.encoderGroups.first().encoders.first()
+        val perpEnc = view.encoderGroups.first().encoders.last()
+
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         telemetry.addLine("OTOS Heading Offset Tuner")
         telemetry.addLine("Line the side of the robot against a wall and Press START.")
         telemetry.addLine("Then push the robot forward some distance.")
         telemetry.update()
+
         waitForStart()
         while (opModeIsActive()) {
-            val pose = otos.position
-            telemetry.addData("Heading Offset (radians, enter this one into OTOSLocalizer!)", atan2(pose.y, pose.x))
-            telemetry.addData("Heading Offset (degrees)", Math.toDegrees(atan2(pose.y, pose.x)))
+            val xPos = parallelEnc.getPositionAndVelocity().position * view.inPerTick
+            val yPos = perpEnc.getPositionAndVelocity().position * view.inPerTick
+
+            telemetry.addData("Heading Offset (radians, enter this one into OTOSLocalizer!)", atan2(yPos, xPos))
+            telemetry.addData("Heading Offset (degrees)", Math.toDegrees(atan2(yPos, xPos)))
             telemetry.update()
         }
     }
 }
 
 /* Originally written by j5155; ported to Kotlin by zach.waffle */
-class OTOSPositionOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
+class OTOSPositionOffsetTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     @Throws(InterruptedException::class)
     override fun runOpMode() {
+        val view = dvf.make(hardwareMap)
+
+        require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
+        require(view.encoderGroups.first() is OTOSEncoderGroup) { OTOS_ERROR_MSG }
+
+        val parallelEnc = view.encoderGroups.first().encoders.first()
+        val perpEnc = view.encoderGroups.first().encoders.last()
+
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         telemetry.addLine("OTOS Position Offset Tuner")
@@ -813,11 +858,14 @@ class OTOSPositionOffsetTuner(val otos: SparkFunOTOS) : LinearOpMode() {
         telemetry.update()
         waitForStart()
         while (opModeIsActive()) {
-            val pose = otos.position
-            telemetry.addData("Heading (deg)", Math.toDegrees(pose.h))
-            if (abs(Math.toDegrees(pose.h)) > 175) {
-                telemetry.addData("X Offset", pose.x / 2)
-                telemetry.addData("Y Offset", pose.y / 2)
+            val heading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+            val xPos = parallelEnc.getPositionAndVelocity().position * view.inPerTick
+            val yPos = perpEnc.getPositionAndVelocity().position * view.inPerTick
+
+            telemetry.addData("Heading (deg)", Math.toDegrees(heading))
+            if (abs(Math.toDegrees(heading)) > 175) {
+                telemetry.addData("X Offset", xPos / 2)
+                telemetry.addData("Y Offset", yPos / 2)
             } else {
                 telemetry.addLine("Rotate the robot 180 degrees and align it to the corner again.")
             }
