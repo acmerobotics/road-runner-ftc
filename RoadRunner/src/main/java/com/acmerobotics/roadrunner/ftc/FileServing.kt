@@ -42,8 +42,7 @@ private fun registerAssetsUnderPath(webHandlerManager: WebHandlerManager,
             webHandlerManager.register("/$path", newStaticAssetHandler(assetManager, "web/$path"))
         }
     } catch (e: IOException) {
-        RobotLog.setGlobalErrorMsg(RuntimeException(e),
-                "unable to register tuning web routes")
+        throw RuntimeException("Unable to register assets under path $path", e)
     }
 }
 
@@ -109,8 +108,7 @@ object TuningFiles {
                             newStaticFileHandler(f))
                 }
             } catch (e: IOException) {
-                RobotLog.setGlobalErrorMsg(RuntimeException(e),
-                        "Unable to write data to " + f.absolutePath)
+                throw RuntimeException("Unable to write data to ${f.absolutePath}", e)
             }
         }
     }
