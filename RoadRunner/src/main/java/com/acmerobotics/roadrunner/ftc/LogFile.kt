@@ -122,7 +122,7 @@ class EnumSchema(val enumClass: Class<Enum<*>>) : MessageSchema {
 }
 
 class ArraySchema(val schema: MessageSchema) : MessageSchema {
-    override fun encodedSize() = 8 + schema.encodedSize()
+    override fun encodedSize() = 4 + schema.encodedSize()
 
     override fun encode(b: ByteBuffer) {
         b.putInt(7) // tag
@@ -178,9 +178,18 @@ fun schemaOfClass(c: Class<*>): MessageSchema =
             }
         }
 
+// 00: Initial version
+// 01: Fixes extra 4 bytes of size reported by array schemas
+private const val VERSION: Short = 1
+
 class LogWriter(val os: OutputStream) {
     init {
-        os.write(ByteBuffer.allocate(4).put('R'.code.toByte()).put('R'.code.toByte()).putShort(0).array()) // magic + version
+        os.write(
+            ByteBuffer.allocate(4)
+                .put('R'.code.toByte())
+                .put('R'.code.toByte())
+                .putShort(VERSION)
+                .array()) // magic + version
     }
 
     data class ChannelMetadata(
@@ -207,7 +216,9 @@ class LogWriter(val os: OutputStream) {
             b.putInt(chBytes.size)
             b.put(chBytes)
             schema.encode(b)
-
+            require(!b.hasRemaining()) {
+                "encoded schema does not match reported size: ${b.remaining()} bytes remaining"
+            }
             os.write(b.array())
 
             m
@@ -221,6 +232,9 @@ class LogWriter(val os: OutputStream) {
         b.putInt(1) // message entry
         b.putInt(m.index) // channel index
         m.schema.encodeObj(o, b)
+        require(!b.hasRemaining()) {
+            "encoded object does not match reported size: ${b.remaining()} bytes remaining"
+        }
         os.write(b.array())
     }
 }
