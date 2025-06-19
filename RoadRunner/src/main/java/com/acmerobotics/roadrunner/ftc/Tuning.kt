@@ -607,7 +607,7 @@ class ManualFeedforwardTuner(val dvf: DriveViewFactory) : LinearOpMode() {
                     view.setDrivePowers(PoseVelocity2d(
                             Vector2d(
                                     -gamepad1.left_stick_y.toDouble(),
-                                    -gamepad1.left_stick_x.toDouble()
+                                    if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
                             ),
                             -gamepad1.right_stick_x.toDouble()
                     ))
