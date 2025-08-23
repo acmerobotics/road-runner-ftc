@@ -66,7 +66,7 @@ class OTOSIMU(val otos: SparkFunOTOS) : LazyImu, IMU, HardwareDevice by otos {
     override fun getRobotOrientationAsQuaternion(): Quaternion = fail()
 
     override fun getRobotAngularVelocity(p0: AngleUnit?): AngularVelocity {
-        return AngularVelocity(otos.angularUnit, 0.0f, 0.0f, otos.velocity.h.toFloat(), 0L)
+        return AngularVelocity(otos.angularUnit, 0.0f, 0.0f, otos.velocity.h.toFloat(), 0L).toAngleUnit(p0)
     }
 
     override fun get() = this as IMU
