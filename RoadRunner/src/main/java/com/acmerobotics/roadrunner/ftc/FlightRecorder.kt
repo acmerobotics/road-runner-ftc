@@ -69,7 +69,7 @@ object FlightRecorder : OpModeManagerNotifier.Notifications {
                     totalSizeBytes -= fs[i].length()
                     if (!fs[i].delete()) {
                         // avoid panicking here
-                        RobotLog.setGlobalErrorMsg("Unable to delete file " + fs[i].absolutePath);
+                        RobotLog.addGlobalWarningMessage("Unable to delete file ${fs[i].absolutePath}")
                     }
                     ++i
                 }

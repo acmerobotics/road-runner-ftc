@@ -570,8 +570,9 @@ class ManualFeedforwardTuner(val dvf: DriveViewFactory) : LinearOpMode() {
                         val v = if (pv.velocity == null) {
                             val lastPos = lastPositions[i]
                             lastPositions[i] = pv.position
+                            val currVelocity = velEstimates[i].update((pv.position - lastPos) / lastTimes[i].seconds())
                             lastTimes[i].reset()
-                            velEstimates[i].update((pv.position - lastPos) / lastTimes[i].seconds())
+                            currVelocity
                         } else {
                             pv.velocity.toDouble()
                         }
@@ -605,7 +606,7 @@ class ManualFeedforwardTuner(val dvf: DriveViewFactory) : LinearOpMode() {
                     view.setDrivePowers(PoseVelocity2d(
                             Vector2d(
                                     -gamepad1.left_stick_y.toDouble(),
-                                    -gamepad1.left_stick_x.toDouble()
+                                    if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
                             ),
                             -gamepad1.right_stick_x.toDouble()
                     ))
@@ -777,7 +778,7 @@ class AngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
                 PoseVelocity2d(
                     Vector2d(
                         -gamepad1.left_stick_y.toDouble(),
-                        -gamepad1.left_stick_x.toDouble()
+                        if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
                     ),
                     -gamepad1.right_stick_x.toDouble()
                 )
@@ -811,12 +812,24 @@ class OTOSLinearScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
         waitForStart()
 
         while (opModeIsActive()) {
+            for (g in view.encoderGroups) {
+                g.bulkRead()
+            }
+
             val xPos = parallelEnc.getPositionAndVelocity().position * view.inPerTick
             val yPos = perpEnc.getPositionAndVelocity().position * view.inPerTick
 
-            telemetry.addData("Uncorrected Distance Traveled Y", xPos)
-            telemetry.addData("Uncorrected Distance Traveled X", yPos)
+            telemetry.addData("Uncorrected Distance Traveled X", xPos)
+            telemetry.addData("Uncorrected Distance Traveled Y", yPos)
             telemetry.update()
+
+            view.setDrivePowers(PoseVelocity2d(
+                Vector2d(
+                    -gamepad1.left_stick_y.toDouble(),
+                    if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
+                ),
+                -gamepad1.right_stick_x.toDouble()
+            ))
         }
     }
 }
@@ -841,12 +854,24 @@ class OTOSHeadingOffsetTuner(val dvf: DriveViewFactory) : LinearOpMode() {
 
         waitForStart()
         while (opModeIsActive()) {
+            for (g in view.encoderGroups) {
+                g.bulkRead()
+            }
+
             val xPos = parallelEnc.getPositionAndVelocity().position * view.inPerTick
             val yPos = perpEnc.getPositionAndVelocity().position * view.inPerTick
 
             telemetry.addData("Heading Offset (radians, enter this one into OTOSLocalizer!)", atan2(yPos, xPos))
             telemetry.addData("Heading Offset (degrees)", Math.toDegrees(atan2(yPos, xPos)))
             telemetry.update()
+
+            view.setDrivePowers(PoseVelocity2d(
+                Vector2d(
+                    -gamepad1.left_stick_y.toDouble(),
+                    if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
+                ),
+                -gamepad1.right_stick_x.toDouble()
+            ))
         }
     }
 }
@@ -872,6 +897,10 @@ class OTOSPositionOffsetTuner(val dvf: DriveViewFactory) : LinearOpMode() {
         telemetry.update()
         waitForStart()
         while (opModeIsActive()) {
+            for (g in view.encoderGroups) {
+                g.bulkRead()
+            }
+
             val heading = view.imu.get().robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
             val xPos = parallelEnc.getPositionAndVelocity().position * view.inPerTick
             val yPos = perpEnc.getPositionAndVelocity().position * view.inPerTick
@@ -884,6 +913,14 @@ class OTOSPositionOffsetTuner(val dvf: DriveViewFactory) : LinearOpMode() {
                 telemetry.addLine("Rotate the robot 180 degrees and align it to the corner again.")
             }
             telemetry.update()
+
+            view.setDrivePowers(PoseVelocity2d(
+                Vector2d(
+                    -gamepad1.left_stick_y.toDouble(),
+                    if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
+                ),
+                -gamepad1.right_stick_x.toDouble()
+            ))
         }
     }
 }
