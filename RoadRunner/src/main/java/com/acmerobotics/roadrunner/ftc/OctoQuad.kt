@@ -9,60 +9,56 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation
 import org.firstinspires.ftc.robotcore.external.navigation.Quaternion
-import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
 
-interface PinpointView {
-    var parDirection: DcMotorSimple.Direction
-    var perpDirection: DcMotorSimple.Direction
-
+interface OctoQuadView {
     fun update()
 
     fun getParEncoderPosition(): Int
     fun getPerpEncoderPosition(): Int
-    fun getHeadingVelocity(unit: UnnormalizedAngleUnit): Float
+    fun getParEncoderVelocity(): Int
+    fun getPerpEncoderVelocity(): Int
+    fun getHeading(): Float
+    fun getHeadingVelocity(): Float
+
+    fun setParDirection(direction: DcMotorSimple.Direction)
+    fun setPerpDirection(direction: DcMotorSimple.Direction)
 }
 
-class PinpointParEncoder(val pinpoint: PinpointView) : Encoder {
-    override var direction by pinpoint::parDirection
-
-    override fun getPositionAndVelocity() = pinpoint.getParEncoderPosition().let {
-        if (direction == DcMotorSimple.Direction.REVERSE) {
-            PositionVelocityPair(-it, null, -it, null)
-        } else {
-            PositionVelocityPair(it, null, it, null)
+class OctoQuadParEncoder(val octoquad: OctoQuadView) : Encoder {
+    override var direction = DcMotorSimple.Direction.FORWARD
+        set(value) {
+            field = value
+            octoquad.setParDirection(value)
         }
-    }
+    override fun getPositionAndVelocity() = rawPosVelPair(octoquad.getParEncoderPosition(), octoquad.getParEncoderVelocity())
 }
 
-class PinpointPerpEncoder(val pinpoint: PinpointView) : Encoder {
-    override var direction by pinpoint::perpDirection
-
-    override fun getPositionAndVelocity() = pinpoint.getPerpEncoderPosition().let {
-        if (direction == DcMotorSimple.Direction.REVERSE) {
-            PositionVelocityPair(-it, null, -it, null)
-        } else {
-            PositionVelocityPair(it, null, it, null)
+class OctoQuadPerpEncoder(val octoquad: OctoQuadView) : Encoder {
+    override var direction = DcMotorSimple.Direction.FORWARD
+        set(value) {
+            field = value
+            octoquad.setPerpDirection(value)
         }
-    }
+    override fun getPositionAndVelocity() = rawPosVelPair(octoquad.getPerpEncoderPosition(), octoquad.getPerpEncoderVelocity())
 }
 
-class PinpointEncoderGroup(
-    val pinpoint: PinpointView,
+class OctoQuadEncoderGroup(
+    val octoquad: OctoQuadView,
 ) : EncoderGroup {
     override val encoders = listOf(
-        PinpointParEncoder(pinpoint),
-        PinpointPerpEncoder(pinpoint),
+        OctoQuadParEncoder(octoquad),
+        OctoQuadPerpEncoder(octoquad),
     )
     override val unwrappedEncoders = encoders
 
     override fun bulkRead() {
-        pinpoint.update()
+        octoquad.update()
     }
 }
 
 // Only the methods used by tuning routines are implemented
-class PinpointIMU(val pinpoint: PinpointView) : IMU, LazyImu {
+class OctoQuadIMU(val octoquad: OctoQuadView): IMU, LazyImu {
     override fun getManufacturer() = HardwareDevice.Manufacturer.Other
     override fun getDeviceName() = ""
     override fun getConnectionInfo() = ""
@@ -78,9 +74,9 @@ class PinpointIMU(val pinpoint: PinpointView) : IMU, LazyImu {
         throw NotImplementedError()
     }
 
-    // AngularScalarTuner uses this, but Pinpoint doesn't need it
     override fun getRobotYawPitchRollAngles(): YawPitchRollAngles {
-        throw NotImplementedError()
+        octoquad.update()
+        return YawPitchRollAngles(AngleUnit.RADIANS, octoquad.getHeading().toDouble(), 0.0, 0.0, 0L)
     }
 
     override fun getRobotOrientation(
@@ -96,9 +92,9 @@ class PinpointIMU(val pinpoint: PinpointView) : IMU, LazyImu {
     }
 
     override fun getRobotAngularVelocity(angleUnit: AngleUnit): AngularVelocity {
-        pinpoint.update()
+        octoquad.update()
         return AngularVelocity(angleUnit, 0.0f, 0.0f,
-            pinpoint.getHeadingVelocity(angleUnit.unnormalized), 0L)
+            octoquad.getHeadingVelocity(), 0L)
     }
 
     override fun get() = this

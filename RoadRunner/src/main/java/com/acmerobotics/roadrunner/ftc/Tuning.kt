@@ -14,7 +14,6 @@ import com.acmerobotics.roadrunner.Vector2d
 import com.acmerobotics.roadrunner.constantProfile
 import com.google.gson.annotations.SerializedName
 import com.qualcomm.hardware.lynx.LynxModule
-import com.qualcomm.hardware.sparkfun.SparkFunOTOS
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
@@ -750,40 +749,47 @@ const val OTOS_ERROR_MSG =
     """
 
 /* Originally written by j5155; ported to Kotlin by zach.waffle */
-class OTOSAngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
+class AngularScalarTuner(val dvf: DriveViewFactory) : LinearOpMode() {
     override fun runOpMode() {
         val view = dvf.make(hardwareMap)
 
-        require(view.imu is OTOSIMU) { OTOS_ERROR_MSG }
+        require(view.imu is OTOSIMU || view.imu is OctoQuadIMU) { " Only OctoQuad and Sparkfun OTOS require angular scalar to be tuned." }
 
         val imu = view.imu.get()
         telemetry = MultipleTelemetry(telemetry, FtcDashboard.getInstance().telemetry)
 
         var radsTurned = 0.0
+
+        view.motors.forEach { it.zeroPowerBehavior = DcMotor.ZeroPowerBehavior.FLOAT }
         var lastHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
-        telemetry.addLine("OTOS Angular Scalar Tuner")
+
+        telemetry.addLine("Angular Scalar Tuner")
         telemetry.addLine("Press START, then rotate the robot on the ground 10 times (3600 degrees).")
         telemetry.update()
         waitForStart()
         while (opModeIsActive()) {
-            val otosHeading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
+            val heading = imu.robotYawPitchRollAngles.getYaw(AngleUnit.RADIANS)
 
-            radsTurned += (Rotation2d.exp(otosHeading) - Rotation2d.exp(lastHeading))
-            lastHeading = otosHeading
+            radsTurned += (Rotation2d.exp(heading) - Rotation2d.exp(lastHeading))
+            lastHeading = heading
 
-            telemetry.addData("OTOS Heading (radians)", otosHeading)
+            view.setDrivePowers(
+                PoseVelocity2d(
+                    Vector2d(
+                        -gamepad1.left_stick_y.toDouble(),
+                        if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
+                    ),
+                    -gamepad1.right_stick_x.toDouble()
+                )
+            )
+
+            telemetry.addLine("Rotate the robot on the ground 10 times (3600 degrees)")
+            telemetry.addLine("You can drive the robot with gamepad1")
+            telemetry.addData("Heading (radians)", heading)
             telemetry.addData("Uncorrected Degrees Turned", Math.toDegrees(radsTurned))
             telemetry.addData("Calculated Angular Scalar", 3600 / Math.toDegrees(radsTurned))
             telemetry.update()
-
-            view.setDrivePowers(PoseVelocity2d(
-                Vector2d(
-                    -gamepad1.left_stick_y.toDouble(),
-                    if (view.type == DriveType.TANK) 0.0 else -gamepad1.left_stick_x.toDouble()
-                ),
-                -gamepad1.right_stick_x.toDouble()
-            ))
         }
     }
 }
