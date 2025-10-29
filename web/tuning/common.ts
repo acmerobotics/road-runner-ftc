@@ -633,10 +633,12 @@ export async function loadLateralRampRegression(inputData: InputLateralRampData)
   const kvInput = document.getElementById('kv')! as HTMLInputElement;
   const ksInput = document.getElementById('ks')! as HTMLInputElement;
   document.getElementById('update')!.addEventListener('click', () => {
-    setParams(parseFloat(inPerTickInput.value), parseFloat(kvInput.value), parseFloat(ksInput.value));
+    // eval() used to evaluate the division of in/tick in fraction form
+    //   see acmerobotics/road-runner-ftc#28
+    setParams(eval(inPerTickInput.value), parseFloat(kvInput.value), parseFloat(ksInput.value));
   });
 
-  setParams(parseFloat(inPerTickInput.value), parseFloat(kvInput.value), parseFloat(ksInput.value));
+  setParams(eval(inPerTickInput.value), parseFloat(kvInput.value), parseFloat(ksInput.value));
 
   const minVel = allPerpEncVels.reduce((acc, v) => Math.min(acc, v), 0);
   const maxAbsVel = allPerpEncVels.reduce((acc, v) => Math.max(acc, Math.abs(v)), 0);
